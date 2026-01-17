@@ -3,19 +3,20 @@
 #include <cstdint>
 #include <bit>
 
+#include "Arduino.h"
 #include "FlexCAN_T4.h"
 
 #include "util.hpp"
 
-CAN_message_t empty_can_message(uint8_t id) {
+CAN_message_t empty_can_message(MessageId id) {
     CAN_message_t result = {0};
-    result.id = id;
+    result.id = (uint8_t)id;
     return result;
 }
 
 /* u = unsigned int, 16 = 16 bits, le = little endian. */
 uint16_t read_u16_le(uint8_t* buf) {
-    return buf[0] | buf[1] << 8;
+    return (static_cast<uint16_t>(buf[1]) << 8) | buf[0];
 }
 
 void write_u16_le(uint8_t* buf, uint16_t value) {
@@ -23,8 +24,20 @@ void write_u16_le(uint8_t* buf, uint16_t value) {
     buf[1] = value >> 8;
 }
 
-uint32_t read_u32_le(uint8_t* buf) {
-    return buf[0] | buf[1] << 8 | buf[2] << 16 | buf[3] << 24;
+/* i = signed int, 16 = 16 bits, le = little endian. */
+int16_t read_i16_le(uint8_t* buf) {
+    return static_cast<int16_t>(read_u16_le(buf));
+}
+
+void write_i16_le(uint8_t* buf, int16_t value) {
+    write_u16_le(buf, static_cast<uint16_t>(value));
+}
+
+uint32_t read_u32_le(const uint8_t* buf) {
+    return  static_cast<uint32_t>(buf[0])        |
+           (static_cast<uint32_t>(buf[1]) <<  8) |
+           (static_cast<uint32_t>(buf[2]) << 16) |
+           (static_cast<uint32_t>(buf[3]) << 24);
 }
 
 void write_u32_le(uint8_t* buf, uint32_t value) {
@@ -49,7 +62,7 @@ void write_f32_le(uint8_t* buf, float value) {
 }
 
 bool parse_start_switch(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == MessageId::StartSwitch);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::StartSwitch);
     return msg.buf[0] != 0;
 }
 
@@ -60,7 +73,7 @@ CAN_message_t create_start_switch(bool value) {
 }
 
 uint16_t parse_throttle_one_position(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == MessageId::ThrottleOnePosition);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleOnePosition);
     return read_u16_le(msg.buf);
 }
 
@@ -71,7 +84,7 @@ CAN_message_t create_throttle_one_position(uint16_t value) {
 }
 
 uint16_t parse_throttle_two_position(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == MessageId::ThrottleTwoPosition);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleTwoPosition);
     return read_u16_le(msg.buf);
 }
 
@@ -82,7 +95,7 @@ CAN_message_t create_throttle_two_position(uint16_t value) {
 }
 
 uint16_t parse_throttle_brake_pressure(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == MessageId::BrakePressure);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::BrakePressure);
     return read_u16_le(msg.buf);
 }
 
@@ -93,7 +106,7 @@ CAN_message_t create_throttle_brake_pressure(uint16_t value) {
 }
 
 RvcMessage parse_rvc(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == MessageId::Rvc);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::Rvc);
     // Make sure the rcv type is one of the six valid types.
     uint8_t rvc_type = msg.buf[0];
     SAFETY_ASSERT(rvc_type < 6);
@@ -111,7 +124,7 @@ CAN_message_t create_rvc(RvcMessage value) {
 }
 
 TireRpmMessage parse_tire_rpm(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == MessageId::TireRpm);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TireRpm);
     // Make sure the tire position is one of the valid positions.
     uint8_t tire_position = msg.buf[0];
     SAFETY_ASSERT(tire_position < 4);
@@ -129,25 +142,31 @@ CAN_message_t create_tire_rpm(TireRpmMessage value) {
 }
 
 TireTemperatureMessage parse_tire_temperature(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == MessageId::TireTemperature);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TireTemperature);
     // Make sure the tire position is one of the valid positions.
     uint8_t tire_position = msg.buf[0];
     SAFETY_ASSERT(tire_position < 4);
 
-    uint16_t value = read_u16_le(&msg.buf[1]);
+    int16_t inner = read_i16_le(&msg.buf[1]);
+    int16_t outer = read_i16_le(&msg.buf[3]);
+    int16_t core = read_i16_le(&msg.buf[5]);
 
-    return (TireTemperatureMessage) { (TirePosition)tire_position, value};
+    return (TireTemperatureMessage) { (TirePosition)tire_position, inner, outer, core };
 }
 
 CAN_message_t create_tire_temperature(TireTemperatureMessage value) {
     CAN_message_t new_message = empty_can_message(MessageId::TireTemperature);
     new_message.buf[0] = (uint8_t)value.position;
-    write_u16_le(&new_message.buf[1], value.value);
+
+    write_i16_le(&new_message.buf[1], value.inner);
+    write_i16_le(&new_message.buf[3], value.outer);
+    write_i16_le(&new_message.buf[5], value.core);
+
     return new_message;
 }
 
 LapMessage parse_lap(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == MessageId::Lap);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::Lap);
     // Make sure the lap message is one of the valid types.
     uint8_t lap_type = msg.buf[0];
     SAFETY_ASSERT(lap_type < 5);
@@ -159,4 +178,145 @@ CAN_message_t create_lap(LapMessage value) {
     CAN_message_t new_message = empty_can_message(MessageId::Lap);
     new_message.buf[0] = (uint8_t)value;
     return new_message;
+}
+
+
+/* Motor messages */
+MotorTemperaturesOne parse_motor_temperatures_one(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TemperaturesOne);
+    return (MotorTemperaturesOne) {
+        read_i16_le(&msg.buf[0]),
+        read_i16_le(&msg.buf[2]),
+        read_i16_le(&msg.buf[4]),
+        read_i16_le(&msg.buf[6]),
+    };
+}
+
+MotorTemperaturesTwo parse_motor_temperatures_two(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TemperaturesTwo);
+    return (MotorTemperaturesTwo) {
+        read_i16_le(&msg.buf[0]),
+        read_i16_le(&msg.buf[2]),
+        read_i16_le(&msg.buf[4]),
+        read_i16_le(&msg.buf[6]),
+    };
+}
+
+MotorTemperaturesThree parse_motor_temperatures_three(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TemperaturesThree);
+    return (MotorTemperaturesThree) {
+        read_i16_le(&msg.buf[0]),
+        read_i16_le(&msg.buf[2]),
+        read_i16_le(&msg.buf[4]),
+        read_i16_le(&msg.buf[6]),
+    };
+}
+
+MotorAnalogInputVoltages parse_motor_analog_input_voltages(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::AnalogInputVoltages);
+    return (MotorAnalogInputVoltages) {
+        read_i16_le(&msg.buf[0]),
+        read_i16_le(&msg.buf[2]),
+        read_i16_le(&msg.buf[4]),
+        read_i16_le(&msg.buf[6]),
+    };
+}
+
+MotorDigitalInputStatus parse_motor_digital_input_status(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::DigitalInputStatus);
+    return (MotorDigitalInputStatus) {
+        msg.buf[0] != 0,
+        msg.buf[1] != 0,
+        msg.buf[2] != 0,
+        msg.buf[3] != 0,
+        msg.buf[4] != 0,
+        msg.buf[5] != 0,
+        msg.buf[6] != 0,
+        msg.buf[7] != 0,
+    };
+}
+
+MotorPositionInfo parse_motor_position_info(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::PositionInfo);
+    return (MotorPositionInfo) {
+        read_i16_le(&msg.buf[0]),
+        read_i16_le(&msg.buf[2]),
+        read_i16_le(&msg.buf[4]),
+        read_i16_le(&msg.buf[6]),
+    };
+}
+
+MotorCurrentInfo parse_motor_current_info(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::CurrentInfo);
+    return (MotorCurrentInfo) {
+        read_i16_le(&msg.buf[0]),
+        read_i16_le(&msg.buf[2]),
+        read_i16_le(&msg.buf[4]),
+        read_i16_le(&msg.buf[6]),
+    };
+}
+
+MotorVoltageInfo parse_motor_voltage_info(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::VoltageInfo);
+    return (MotorVoltageInfo) {
+        read_i16_le(&msg.buf[0]),
+        read_i16_le(&msg.buf[2]),
+        read_i16_le(&msg.buf[4]),
+        read_i16_le(&msg.buf[6]),
+    };
+}
+
+MotorFluxInfo parse_motor_flux_info(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::FluxInfo);
+    return (MotorFluxInfo) {
+        read_i16_le(&msg.buf[0]),
+        read_i16_le(&msg.buf[2]),
+        read_i16_le(&msg.buf[4]),
+        read_i16_le(&msg.buf[6]),
+    };
+}
+
+MotorInternalVoltages parse_motor_internal_voltages(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::InternalVoltages);
+    return (MotorInternalVoltages) {
+        read_i16_le(&msg.buf[0]),
+        read_i16_le(&msg.buf[2]),
+        read_i16_le(&msg.buf[4]),
+        read_i16_le(&msg.buf[6]),
+    };
+}
+
+MotorInternalStates parse_motor_internal_states(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::InternalStates);
+
+    // Make sure buf[0] is safe to cast to VsmState.
+    SAFETY_ASSERT(msg.buf[0] <= 7 || (msg.buf[0] >= 14 && msg.buf[0] <= 15));
+    VsmState vsm_state = (VsmState)msg.buf[0];
+    uint8_t pwm_frequency = msg.buf[1];
+
+    // Make sure buf[2] is safe to cast to InverterState.
+    SAFETY_ASSERT(msg.buf[2] <= 12);
+    InverterState inverter_state = (InverterState)msg.buf[2];
+
+    // Make sure buf[3] is within bounds.
+    SAFETY_ASSERT(msg.buf[3] < 0b01000000);
+    RelayState relay_state = (RelayState) {
+        bitRead(msg.buf[3], 0),
+        bitRead(msg.buf[3], 1),
+        bitRead(msg.buf[3], 2),
+        bitRead(msg.buf[3], 3),
+        bitRead(msg.buf[3], 4),
+        bitRead(msg.buf[3], 5),
+    };
+
+    InverterRunMode inverter_run_mode;
+    if (bitRead(msg.buf[4], 0)) {
+        inverter_run_mode = InverterRunMode::SpeedMode;
+    } else {
+        inverter_run_mode = InverterRunMode::TorqueMode;
+    }
+
+    bool self_sensing_assist_enable = bitRead(msg.buf[4], 1);
+
+    
 }
