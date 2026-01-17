@@ -59,7 +59,6 @@ bool throttle2UPDATE;
 
 void setup() {
   Serial.begin(SERIAL_RATE);
-  while (!Serial) {}
 
   MotorCAN.begin();
   MotorCAN.setBaudRate(CAN_RATE);
@@ -256,3 +255,4 @@ void user_update(int throttle1,
 
     Serial.println("==================================");
 }
+
