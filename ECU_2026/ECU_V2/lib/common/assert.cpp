@@ -1,4 +1,4 @@
-#include "util.hpp"
+#include "assert.hpp"
 
 // `static` makes this variable private to this file, so nobody
 // can directly access `current_handler`.

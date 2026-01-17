@@ -1,16 +1,17 @@
-#include "can.hpp"
+#include "can_serde.hpp"
 
-#include <cstdint>
-#include <bit>
+#include <cstring>
 
-#include "Arduino.h"
-#include "FlexCAN_T4.h"
+#include "assert.hpp"
 
-#include "util.hpp"
+/* We do a lot of bit mucking below, so we'll use these quite a bit. */
+#define BIT_READ(value, bit) ((bool)(((value) >> (bit)) & 0x01))
+#define BIT_SET(value, bit) ((value) |= (1UL << (bit)))
 
-CAN_message_t empty_can_message(MessageId id) {
+CAN_message_t empty_can_message(MessageId id, uint8_t len) {
     CAN_message_t result = {0};
     result.id = (uint8_t)id;
+    result.len = len;
     return result;
 }
 
@@ -67,46 +68,46 @@ bool parse_start_switch(CAN_message_t msg) {
 }
 
 CAN_message_t create_start_switch(bool value) {
-    CAN_message_t new_message = empty_can_message(MessageId::StartSwitch);
+    CAN_message_t new_message = empty_can_message(MessageId::StartSwitch, 2);
     new_message.buf[0] = value;
     return new_message;
 }
 
 uint16_t parse_throttle_one_position(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleOnePosition);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleOnePosition && msg.len == 2);
     return read_u16_le(msg.buf);
 }
 
 CAN_message_t create_throttle_one_position(uint16_t value) {
-    CAN_message_t new_message = empty_can_message(MessageId::ThrottleOnePosition);
+    CAN_message_t new_message = empty_can_message(MessageId::ThrottleOnePosition, 2);
     write_u16_le(new_message.buf, value);
     return new_message;
 }
 
 uint16_t parse_throttle_two_position(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleTwoPosition);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleTwoPosition && msg.len == 2);
     return read_u16_le(msg.buf);
 }
 
 CAN_message_t create_throttle_two_position(uint16_t value) {
-    CAN_message_t new_message = empty_can_message(MessageId::ThrottleTwoPosition);
+    CAN_message_t new_message = empty_can_message(MessageId::ThrottleTwoPosition, 2);
     write_u16_le(new_message.buf, value);
     return new_message;
 }
 
 uint16_t parse_throttle_brake_pressure(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::BrakePressure);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::BrakePressure && msg.len == 2);
     return read_u16_le(msg.buf);
 }
 
 CAN_message_t create_throttle_brake_pressure(uint16_t value) {
-    CAN_message_t new_message = empty_can_message(MessageId::BrakePressure);
+    CAN_message_t new_message = empty_can_message(MessageId::BrakePressure, 2);
     write_u16_le(new_message.buf, value);
     return new_message;
 }
 
 RvcMessage parse_rvc(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::Rvc);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::Rvc && msg.len == 5);
     // Make sure the rcv type is one of the six valid types.
     uint8_t rvc_type = msg.buf[0];
     SAFETY_ASSERT(rvc_type < 6);
@@ -117,14 +118,14 @@ RvcMessage parse_rvc(CAN_message_t msg) {
 }
 
 CAN_message_t create_rvc(RvcMessage value) {
-    CAN_message_t new_message = empty_can_message(MessageId::Rvc);
+    CAN_message_t new_message = empty_can_message(MessageId::Rvc, 5);
     new_message.buf[0] = (uint8_t)value.type;
     write_f32_le(&new_message.buf[1], value.value);
     return new_message;
 }
 
 TireRpmMessage parse_tire_rpm(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TireRpm);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TireRpm && msg.len == 5);
     // Make sure the tire position is one of the valid positions.
     uint8_t tire_position = msg.buf[0];
     SAFETY_ASSERT(tire_position < 4);
@@ -135,14 +136,14 @@ TireRpmMessage parse_tire_rpm(CAN_message_t msg) {
 }
 
 CAN_message_t create_tire_rpm(TireRpmMessage value) {
-    CAN_message_t new_message = empty_can_message(MessageId::TireRpm);
+    CAN_message_t new_message = empty_can_message(MessageId::TireRpm, 5);
     new_message.buf[0] = (uint8_t)value.position;
     write_f32_le(&new_message.buf[1], value.value);
     return new_message;
 }
 
 TireTemperatureMessage parse_tire_temperature(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TireTemperature);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TireTemperature && msg.len == 7);
     // Make sure the tire position is one of the valid positions.
     uint8_t tire_position = msg.buf[0];
     SAFETY_ASSERT(tire_position < 4);
@@ -155,7 +156,7 @@ TireTemperatureMessage parse_tire_temperature(CAN_message_t msg) {
 }
 
 CAN_message_t create_tire_temperature(TireTemperatureMessage value) {
-    CAN_message_t new_message = empty_can_message(MessageId::TireTemperature);
+    CAN_message_t new_message = empty_can_message(MessageId::TireTemperature, 7);
     new_message.buf[0] = (uint8_t)value.position;
 
     write_i16_le(&new_message.buf[1], value.inner);
@@ -175,7 +176,7 @@ LapMessage parse_lap(CAN_message_t msg) {
 }
 
 CAN_message_t create_lap(LapMessage value) {
-    CAN_message_t new_message = empty_can_message(MessageId::Lap);
+    CAN_message_t new_message = empty_can_message(MessageId::Lap, 1);
     new_message.buf[0] = (uint8_t)value;
     return new_message;
 }
@@ -183,7 +184,7 @@ CAN_message_t create_lap(LapMessage value) {
 
 /* Motor messages */
 MotorTemperaturesOne parse_motor_temperatures_one(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TemperaturesOne);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TemperaturesOne && msg.len == 1);
     return (MotorTemperaturesOne) {
         read_i16_le(&msg.buf[0]),
         read_i16_le(&msg.buf[2]),
@@ -301,22 +302,22 @@ MotorInternalStates parse_motor_internal_states(CAN_message_t msg) {
     // Make sure buf[3] is within bounds.
     SAFETY_ASSERT(msg.buf[3] < 0b01000000);
     RelayState relay_state = (RelayState) {
-        bitRead(msg.buf[3], 0),
-        bitRead(msg.buf[3], 1),
-        bitRead(msg.buf[3], 2),
-        bitRead(msg.buf[3], 3),
-        bitRead(msg.buf[3], 4),
-        bitRead(msg.buf[3], 5),
+        BIT_READ(msg.buf[3], 0),
+        BIT_READ(msg.buf[3], 1),
+        BIT_READ(msg.buf[3], 2),
+        BIT_READ(msg.buf[3], 3),
+        BIT_READ(msg.buf[3], 4),
+        BIT_READ(msg.buf[3], 5),
     };
 
     InverterRunMode inverter_run_mode;
-    if (bitRead(msg.buf[4], 0)) {
+    if (BIT_READ(msg.buf[4], 0)) {
         inverter_run_mode = InverterRunMode::SpeedMode;
     } else {
         inverter_run_mode = InverterRunMode::TorqueMode;
     }
 
-    bool self_sensing_assist_enable = bitRead(msg.buf[4], 1);
+    bool self_sensing_assist_enable = BIT_READ(msg.buf[4], 1);
 
     
 }

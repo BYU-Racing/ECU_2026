@@ -1,6 +1,6 @@
-#include "Arduino.h"
+#include "assert.hpp"
 
-#include "util.hpp"
+#include "Arduino.h"
 
 void panic_handler(const char* file, int line, const char* msg) {
     // Shut everything down.
