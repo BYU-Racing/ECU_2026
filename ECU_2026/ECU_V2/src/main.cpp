@@ -7,6 +7,9 @@ void panic_handler(const char* file, int line, const char* msg) {
 
     // Write to serial so we get some debug info.
     Serial.printf("Assertion failed! Line %d in file %s with message %s\n", line, file, msg);
+
+    /* Loop forever so we never do anything after the panic. */
+    while (true) {}
 }
 
 void setup() {

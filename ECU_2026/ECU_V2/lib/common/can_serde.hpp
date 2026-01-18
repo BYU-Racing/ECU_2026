@@ -30,8 +30,8 @@ typedef struct CAN_message_t {
 #include "FlexCAN_T4.h"
 #endif
 
-/* All the CAN messages with their IDs. */
-enum class MessageId: uint8_t {
+/* All the CAN messages with their associated IDs. */
+enum class MessageId: uint32_t {
     /* Sensor messages. */
     StartSwitch = 0,
     ThrottleOnePosition = 1,
@@ -83,7 +83,9 @@ enum class MessageId: uint8_t {
     /* Torque Command, Torque Feedback, Motor Speed, DC Bus Voltage. */
     HighSpeed = 176,
     TorqueCapability = 177,
-    /* Response to ParameterCommand. */
+    /* The Command Message is used to transmit data to the controller. This message
+     * is sent from a user-supplied external controller to the motor controller. The
+     * Control Message (0x0C0) is used to operate the controller via the CAN interface. */
     ControlCommand = 192,
     ParameterCommand = 193,
     ParameterResponse = 194,
@@ -285,8 +287,9 @@ enum class BurstModelMode {
     HighSpeed = 1,
 };
 
-enum class DirectionCommand {
-    Forward, Reverse, Stopped,
+enum class MotorDirection {
+    Reverse = 0,
+    Forward = 1,
 };
 
 struct MotorInternalStates {
@@ -303,7 +306,7 @@ struct MotorInternalStates {
     BurstModelMode burst_model_mode;
     bool start_mode_active; /* false = start signal not activated, true = activated. */
     bool inverter_enable_lockout; /* false = inverter can be enabled, true = can't be enabled. */
-    DirectionCommand direction_command;
+    MotorDirection direction_command;
     bool bms_active; /* false = BMS message not being received, true is being received. */
     bool bms_limiting_torque; /* false = torque not being limited by BMS, true = limited. */
 
@@ -331,6 +334,25 @@ struct MotorInternalStates {
     bool limit_stall_burst_model;
 };
 
+struct MotorControlCommand {
+    int16_t torque; /* 1 = 0.1Nm. */
+    int16_t speed;  /* RPM */
+    MotorDirection direction;
+    bool enable_inverter;
+    bool inverter_discharge; /* false = disable discharge, true = enable. */
+
+    /* false = Do not over-ride mode. true = If controller is in torque mode then
+     * controller will change to speed mode. This is a mode over-ride bit that will
+     * change the mode from torque to speed only. It does not change the mode from
+     * speed to torque. See manual Using Speed Mode for more information. */
+    bool override_speed;
+
+    /* If set to 0, the default torque limits sets in the EEPROM parameters are used. If
+     * set to a positive number then the Motor and Regen Torque limits are set to the
+     * torque value sent.*/
+    int16_t torque_limit;
+};
+
 CAN_message_t empty_can_message(MessageId id, uint8_t len);
 uint16_t read_u16_le(uint8_t* buf);
 void write_u16_le(uint8_t* buf, uint16_t value);
@@ -345,7 +367,7 @@ uint16_t parse_throttle_one_position(CAN_message_t msg);
 CAN_message_t create_throttle_one_position(uint16_t value);
 uint16_t parse_throttle_two_position(CAN_message_t msg);
 CAN_message_t create_throttle_two_position(uint16_t value);
-uint16_t parse_throttle_brake_pressure(CAN_message_t msg);
+uint16_t parse_brake_pressure(CAN_message_t msg);
 CAN_message_t create_throttle_brake_pressure(uint16_t value);
 RvcMessage parse_rvc(CAN_message_t msg);
 CAN_message_t create_rvc(RvcMessage value);
@@ -355,3 +377,15 @@ TireTemperatureMessage parse_tire_temperature(CAN_message_t msg);
 CAN_message_t create_tire_temperature(TireTemperatureMessage value);
 LapMessage parse_lap(CAN_message_t msg);
 CAN_message_t create_lap(LapMessage value);
+
+MotorTemperaturesOne parse_motor_temperatures_one(CAN_message_t msg);
+MotorTemperaturesTwo parse_motor_temperatures_two(CAN_message_t msg);
+MotorTemperaturesThree parse_motor_temperatures_three(CAN_message_t msg);
+MotorAnalogInputVoltages parse_motor_analog_input_voltages(CAN_message_t msg);
+MotorDigitalInputStatus parse_motor_digital_input_status(CAN_message_t msg);
+MotorPositionInfo parse_motor_position_info(CAN_message_t msg);
+MotorCurrentInfo parse_motor_current_info(CAN_message_t msg);
+MotorVoltageInfo parse_motor_voltage_info(CAN_message_t msg);
+MotorFluxInfo parse_motor_flux_info(CAN_message_t msg);
+MotorInternalVoltages parse_motor_internal_voltages(CAN_message_t msg);
+MotorControlCommand parse_motor_control_command(CAN_message_t msg);

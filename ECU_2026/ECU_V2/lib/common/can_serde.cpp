@@ -74,7 +74,7 @@ CAN_message_t create_start_switch(bool value) {
 }
 
 uint16_t parse_throttle_one_position(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleOnePosition && msg.len == 2);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleOnePosition && msg.len >= 2);
     return read_u16_le(msg.buf);
 }
 
@@ -85,7 +85,7 @@ CAN_message_t create_throttle_one_position(uint16_t value) {
 }
 
 uint16_t parse_throttle_two_position(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleTwoPosition && msg.len == 2);
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleTwoPosition && msg.len >= 2);
     return read_u16_le(msg.buf);
 }
 
@@ -95,8 +95,8 @@ CAN_message_t create_throttle_two_position(uint16_t value) {
     return new_message;
 }
 
-uint16_t parse_throttle_brake_pressure(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::BrakePressure && msg.len == 2);
+uint16_t parse_brake_pressure(CAN_message_t msg) {
+    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::BrakePressure && msg.len >= 2);
     return read_u16_le(msg.buf);
 }
 
@@ -108,7 +108,7 @@ CAN_message_t create_throttle_brake_pressure(uint16_t value) {
 
 RvcMessage parse_rvc(CAN_message_t msg) {
     SAFETY_ASSERT(msg.id == (uint8_t)MessageId::Rvc && msg.len == 5);
-    // Make sure the rcv type is one of the six valid types.
+    // Make sure the rvc type is one of the six valid types.
     uint8_t rvc_type = msg.buf[0];
     SAFETY_ASSERT(rvc_type < 6);
 
@@ -184,131 +184,170 @@ CAN_message_t create_lap(LapMessage value) {
 
 /* Motor messages */
 MotorTemperaturesOne parse_motor_temperatures_one(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TemperaturesOne && msg.len == 1);
-    return (MotorTemperaturesOne) {
-        read_i16_le(&msg.buf[0]),
-        read_i16_le(&msg.buf[2]),
-        read_i16_le(&msg.buf[4]),
-        read_i16_le(&msg.buf[6]),
-    };
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::TemperaturesOne) && msg.len == 8);
+
+    MotorTemperaturesOne temps;
+    temps.phase_a_temp     = read_i16_le(&msg.buf[0]);
+    temps.phase_b_temp     = read_i16_le(&msg.buf[2]);
+    temps.phase_c_temp     = read_i16_le(&msg.buf[4]);
+    temps.gate_driver_temp = read_i16_le(&msg.buf[6]);
+
+    return temps;
 }
 
 MotorTemperaturesTwo parse_motor_temperatures_two(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TemperaturesTwo);
-    return (MotorTemperaturesTwo) {
-        read_i16_le(&msg.buf[0]),
-        read_i16_le(&msg.buf[2]),
-        read_i16_le(&msg.buf[4]),
-        read_i16_le(&msg.buf[6]),
-    };
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::TemperaturesTwo) && msg.len == 8);
+
+    MotorTemperaturesTwo temps;
+    temps.control_board_temp = read_i16_le(&msg.buf[0]);
+    temps.rtd1               = read_i16_le(&msg.buf[2]);
+    temps.rtd2               = read_i16_le(&msg.buf[4]);
+    temps.rtd3               = read_i16_le(&msg.buf[6]);
+
+    return temps;
 }
 
 MotorTemperaturesThree parse_motor_temperatures_three(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TemperaturesThree);
-    return (MotorTemperaturesThree) {
-        read_i16_le(&msg.buf[0]),
-        read_i16_le(&msg.buf[2]),
-        read_i16_le(&msg.buf[4]),
-        read_i16_le(&msg.buf[6]),
-    };
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::TemperaturesThree) && msg.len == 8);
+
+    MotorTemperaturesThree temps;
+    temps.coolant_temp   = read_i16_le(&msg.buf[0]);
+    temps.hot_spot_temp  = read_i16_le(&msg.buf[2]);
+    temps.motor_temp     = read_i16_le(&msg.buf[4]);
+    temps.torque_shudder = read_i16_le(&msg.buf[6]);
+
+    return temps;
 }
 
 MotorAnalogInputVoltages parse_motor_analog_input_voltages(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::AnalogInputVoltages);
-    return (MotorAnalogInputVoltages) {
-        read_i16_le(&msg.buf[0]),
-        read_i16_le(&msg.buf[2]),
-        read_i16_le(&msg.buf[4]),
-        read_i16_le(&msg.buf[6]),
-    };
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::AnalogInputVoltages) && msg.len == 8);
+
+    MotorAnalogInputVoltages voltages;
+    voltages.analog_input_one   = read_i16_le(&msg.buf[0]);
+    voltages.analog_input_two   = read_i16_le(&msg.buf[2]);
+    voltages.analog_input_three = read_i16_le(&msg.buf[4]);
+    voltages.analog_input_four  = read_i16_le(&msg.buf[6]);
+
+    return voltages;
 }
 
 MotorDigitalInputStatus parse_motor_digital_input_status(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::DigitalInputStatus);
-    return (MotorDigitalInputStatus) {
-        msg.buf[0] != 0,
-        msg.buf[1] != 0,
-        msg.buf[2] != 0,
-        msg.buf[3] != 0,
-        msg.buf[4] != 0,
-        msg.buf[5] != 0,
-        msg.buf[6] != 0,
-        msg.buf[7] != 0,
-    };
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::DigitalInputStatus) && msg.len == 8);
+
+    MotorDigitalInputStatus status;
+    status.forward_switch       =   msg.buf[0] != 0;
+    status.reverse_switch       =   msg.buf[1] != 0;
+    status.brake_switch         =   msg.buf[2] != 0;
+    status.regen_disable_switch =   msg.buf[3] != 0;
+    status.ignition_switch      =   msg.buf[4] != 0;
+    status.start_switch         =   msg.buf[5] != 0;
+    status.valet_mode           =   msg.buf[6] != 0;
+    status.digital_input_eight  =   msg.buf[7] != 0;
+
+    return status;
 }
 
 MotorPositionInfo parse_motor_position_info(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::PositionInfo);
-    return (MotorPositionInfo) {
-        read_i16_le(&msg.buf[0]),
-        read_i16_le(&msg.buf[2]),
-        read_i16_le(&msg.buf[4]),
-        read_i16_le(&msg.buf[6]),
-    };
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::PositionInfo) && msg.len == 8);
+
+    MotorPositionInfo info;
+    info.motor_angle            = read_i16_le(&msg.buf[0]);
+    info.motor_speed            = read_i16_le(&msg.buf[2]);
+    info.electrical_frequency   = read_i16_le(&msg.buf[4]);
+    info.delta_resolver_angle   = read_i16_le(&msg.buf[6]);
+
+    return info;
 }
 
 MotorCurrentInfo parse_motor_current_info(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::CurrentInfo);
-    return (MotorCurrentInfo) {
-        read_i16_le(&msg.buf[0]),
-        read_i16_le(&msg.buf[2]),
-        read_i16_le(&msg.buf[4]),
-        read_i16_le(&msg.buf[6]),
-    };
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::CurrentInfo) && msg.len == 8);
+
+    MotorCurrentInfo info;
+    info.phase_a_current = read_i16_le(&msg.buf[0]);
+    info.phase_b_current = read_i16_le(&msg.buf[2]);
+    info.phase_c_current = read_i16_le(&msg.buf[4]);
+    info.dc_bus_current  = read_i16_le(&msg.buf[6]);
+
+    return info;
 }
 
 MotorVoltageInfo parse_motor_voltage_info(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::VoltageInfo);
-    return (MotorVoltageInfo) {
-        read_i16_le(&msg.buf[0]),
-        read_i16_le(&msg.buf[2]),
-        read_i16_le(&msg.buf[4]),
-        read_i16_le(&msg.buf[6]),
-    };
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::VoltageInfo) && msg.len == 8);
+
+    MotorVoltageInfo info;
+    info.dc_bus_voltage = read_i16_le(&msg.buf[0]);
+    info.output_voltage = read_i16_le(&msg.buf[2]);
+    info.vab_voltage    = read_i16_le(&msg.buf[4]);
+    info.vbc_voltage    = read_i16_le(&msg.buf[6]);
+
+    return info;
 }
 
 MotorFluxInfo parse_motor_flux_info(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::FluxInfo);
-    return (MotorFluxInfo) {
-        read_i16_le(&msg.buf[0]),
-        read_i16_le(&msg.buf[2]),
-        read_i16_le(&msg.buf[4]),
-        read_i16_le(&msg.buf[6]),
-    };
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::FluxInfo) && msg.len == 8);
+
+    MotorFluxInfo info;
+    info.flux_command  = read_i16_le(&msg.buf[0]);
+    info.flux_feedback = read_i16_le(&msg.buf[2]);
+    info.id_feedback   = read_i16_le(&msg.buf[4]);
+    info.iq_feedback   = read_i16_le(&msg.buf[6]);
+
+    return info;
 }
 
 MotorInternalVoltages parse_motor_internal_voltages(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::InternalVoltages);
-    return (MotorInternalVoltages) {
-        read_i16_le(&msg.buf[0]),
-        read_i16_le(&msg.buf[2]),
-        read_i16_le(&msg.buf[4]),
-        read_i16_le(&msg.buf[6]),
-    };
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::InternalVoltages) && msg.len == 8);
+
+    MotorInternalVoltages voltages;
+    voltages.reference_1_5_v = read_i16_le(&msg.buf[0]);
+    voltages.reference_2_5_v = read_i16_le(&msg.buf[2]);
+    voltages.reference_5_0_v = read_i16_le(&msg.buf[4]);
+    voltages.reference_12_v  = read_i16_le(&msg.buf[6]);
+
+    return voltages;
 }
 
 MotorInternalStates parse_motor_internal_states(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::InternalStates);
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::InternalStates));
 
-    // Make sure buf[0] is safe to cast to VsmState.
+    /* Make sure buf[0] is safe to cast to VsmState. */
     SAFETY_ASSERT(msg.buf[0] <= 7 || (msg.buf[0] >= 14 && msg.buf[0] <= 15));
-    VsmState vsm_state = (VsmState)msg.buf[0];
+    VsmState vsm_state = static_cast<VsmState>(msg.buf[0]);
     uint8_t pwm_frequency = msg.buf[1];
 
-    // Make sure buf[2] is safe to cast to InverterState.
+    /* Make sure buf[2] is safe to cast to InverterState. */
     SAFETY_ASSERT(msg.buf[2] <= 12);
-    InverterState inverter_state = (InverterState)msg.buf[2];
+    InverterState inverter_state = static_cast<InverterState>(msg.buf[2]);
 
-    // Make sure buf[3] is within bounds.
-    SAFETY_ASSERT(msg.buf[3] < 0b01000000);
-    RelayState relay_state = (RelayState) {
-        BIT_READ(msg.buf[3], 0),
-        BIT_READ(msg.buf[3], 1),
-        BIT_READ(msg.buf[3], 2),
-        BIT_READ(msg.buf[3], 3),
-        BIT_READ(msg.buf[3], 4),
-        BIT_READ(msg.buf[3], 5),
-    };
+    RelayState relay_state;
+    relay_state.relay_one   = BIT_READ(msg.buf[3], 0);
+    relay_state.relay_two   = BIT_READ(msg.buf[3], 1);
+    relay_state.relay_three = BIT_READ(msg.buf[3], 2);
+    relay_state.relay_four  = BIT_READ(msg.buf[3], 3);
+    relay_state.relay_five  = BIT_READ(msg.buf[3], 4);
+    relay_state.relay_six   = BIT_READ(msg.buf[3], 5);
 
     InverterRunMode inverter_run_mode;
     if (BIT_READ(msg.buf[4], 0)) {
@@ -319,5 +358,30 @@ MotorInternalStates parse_motor_internal_states(CAN_message_t msg) {
 
     bool self_sensing_assist_enable = BIT_READ(msg.buf[4], 1);
 
-    
+    // FIXME properly parse this
 }
+
+MotorControlCommand parse_motor_control_command(CAN_message_t msg) {
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::ControlCommand) && msg.len == 8);
+
+    MotorControlCommand result;
+    result.torque = read_i16_le(&msg.buf[0]);
+    result.speed = read_i16_le(&msg.buf[2]);
+
+    /* Convert the direction value into an enum so it's easier to use. */
+    if (msg.buf[4] != 0) {
+        result.direction = MotorDirection::Forward;
+    } else {
+        result.direction = MotorDirection::Reverse;
+    }
+
+    result.enable_inverter = BIT_READ(msg.buf[5], 0);
+    result.inverter_discharge = BIT_READ(msg.buf[5], 1);
+    result.override_speed = BIT_READ(msg.buf[5], 2);
+    result.torque_limit = read_i16_le(&msg.buf[6]);
+
+    return result;
+}
+

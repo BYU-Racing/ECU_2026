@@ -17,11 +17,25 @@ void tearDown(void) {
     // clean stuff up here
 }
 
+void panic_handler(const char *file, int line, const char *msg) {
+    /* If an SAFETY_ASSERT fails somewhere in the code, this will let the testing environment
+     * know that we failed the test. */
+    std::stringstream fail_msg;
+    fail_msg << "Assert failed at " << file << ":" << line;
+    TEST_FAIL_MESSAGE(fail_msg.str().c_str());
+}
+
 void test_start_switch() {
     TEST_ASSERT(true);
     CAN_message_t msg = empty_can_message((MessageId)0, 1);
     msg.buf[0] = 1;
     TEST_ASSERT(parse_start_switch(msg) == true);
+}
+
+void test_safety_violation() {
+    CAN_message_t msg = empty_can_message(MessageId::Rvc, 5);
+    msg.buf[0] = 8; /* Out of range for RVC type. */
+    parse_rvc(msg);
 }
 
 void test_can_dump_parsing() {
@@ -58,20 +72,80 @@ void test_can_dump_parsing() {
 
         switch (static_cast<MessageId>(msg.id)) {
             case MessageId::StartSwitch:
+                parse_start_switch(msg);
+                break;
+            case MessageId::ThrottleOnePosition:
+                parse_throttle_one_position(msg);
+                break;
+            case MessageId::ThrottleTwoPosition:
+                parse_throttle_two_position(msg);
+                break;
+            case MessageId::BrakePressure:
+                parse_brake_pressure(msg);
+                break;
+            case MessageId::TemperaturesOne:
+                parse_motor_temperatures_one(msg);
+                break;
+            case MessageId::TemperaturesTwo:
+                parse_motor_temperatures_two(msg);
+                break;
+            case MessageId::TemperaturesThree:
+                parse_motor_temperatures_three(msg);
+                break;
+            case MessageId::AnalogInputVoltages:
+                parse_motor_analog_input_voltages(msg);
+                break;
+            case MessageId::DigitalInputStatus:
+                parse_motor_digital_input_status(msg);
+                break;
+            case MessageId::PositionInfo:
+                parse_motor_position_info(msg);
+                break;
+            case MessageId::CurrentInfo:
+                parse_motor_current_info(msg);
+                break;
+            case MessageId::VoltageInfo:
+                parse_motor_voltage_info(msg);
+                break;
+            case MessageId::FluxInfo:
+                parse_motor_flux_info(msg);
+                break;
+            case MessageId::InternalStates:
+                // FIXME this one was really big so I haven't finished it yet.
+                break;
+            case MessageId::InternalVoltages:
+                parse_motor_internal_voltages(msg);
+                break;
+            case MessageId::FirmwareInfo:
+                /* Motor internal message. */
+                break;
+            case MessageId::ControlCommand:
+                parse_motor_control_command(msg);
                 break;
             default:
-                std::stringstream fail_msg;
-                fail_msg << "Did not account for message id " << msg.id;
-                TEST_FAIL_MESSAGE(fail_msg.str().c_str());
+                /* Right now I don't know what some of the message IDs are, so this is a switch
+                 * of IDs I'm specifically ignoring. Otherwise it'll throw an error so I can make
+                 * sure I handle every message type. */
+                switch (msg.id) {
+                    case 55:
+                    case 56:
+                    case 128:
+                    case 1713:
+                    case 1744:
+                    case 406451072:
+                    case 406385536:
+                    case 418316160:
+                        // FIXME these are mystery messages.
+                        break;
+                    default:
+                        std::stringstream fail_msg;
+                        fail_msg << "Did not account for message id " << msg.id;
+                        TEST_FAIL_MESSAGE(fail_msg.str().c_str());
+                        break;
+                }
                 break;
         }
     }
-}
-
-void panic_handler(const char *file, int line, const char *msg) {
-    /* If an SAFETY_ASSERT fails somewhere in the code, this will let the testing environment
-     * know that we failed the test. */
-    TEST_ASSERT(false);
 }
 
 int main(int argc, char **argv) {
@@ -80,5 +154,6 @@ int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_start_switch);
     RUN_TEST(test_can_dump_parsing);
+    // RUN_TEST(test_safety_violation);
     UNITY_END();
 }
