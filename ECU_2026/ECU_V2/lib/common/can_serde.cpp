@@ -17,6 +17,7 @@ CAN_message_t empty_can_message(MessageId id, uint8_t len) {
 
 /* u = unsigned int, 16 = 16 bits, le = little endian. */
 uint16_t read_u16_le(uint8_t* buf) {
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises. */
     return (static_cast<uint16_t>(buf[1]) << 8) | buf[0];
 }
 
@@ -35,6 +36,7 @@ void write_i16_le(uint8_t* buf, int16_t value) {
 }
 
 uint32_t read_u32_le(const uint8_t* buf) {
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises. */
     return  static_cast<uint32_t>(buf[0])        |
            (static_cast<uint32_t>(buf[1]) <<  8) |
            (static_cast<uint32_t>(buf[2]) << 16) |
@@ -63,7 +65,9 @@ void write_f32_le(uint8_t* buf, float value) {
 }
 
 bool parse_start_switch(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::StartSwitch);
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::StartSwitch));
     return msg.buf[0] != 0;
 }
 
@@ -74,7 +78,9 @@ CAN_message_t create_start_switch(bool value) {
 }
 
 uint16_t parse_throttle_one_position(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleOnePosition && msg.len >= 2);
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::ThrottleOnePosition) && msg.len >= 2);
     return read_u16_le(msg.buf);
 }
 
@@ -85,7 +91,9 @@ CAN_message_t create_throttle_one_position(uint16_t value) {
 }
 
 uint16_t parse_throttle_two_position(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::ThrottleTwoPosition && msg.len >= 2);
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::ThrottleTwoPosition) && msg.len >= 2);
     return read_u16_le(msg.buf);
 }
 
@@ -96,7 +104,9 @@ CAN_message_t create_throttle_two_position(uint16_t value) {
 }
 
 uint16_t parse_brake_pressure(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::BrakePressure && msg.len >= 2);
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::BrakePressure) && msg.len >= 2);
     return read_u16_le(msg.buf);
 }
 
@@ -107,14 +117,20 @@ CAN_message_t create_throttle_brake_pressure(uint16_t value) {
 }
 
 RvcMessage parse_rvc(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::Rvc && msg.len == 5);
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::Rvc) && msg.len >= 5);
     // Make sure the rvc type is one of the six valid types.
     uint8_t rvc_type = msg.buf[0];
-    SAFETY_ASSERT(rvc_type < 6);
+    SAFETY_ASSERT(rvc_type <= 5);
 
     float value = read_f32_le(&msg.buf[1]);
 
-    return (RvcMessage) { (RvcType)rvc_type, value };
+    RvcMessage result;
+    result.type = static_cast<RvcType>(rvc_type);
+    result.value = value;
+
+    return result;
 }
 
 CAN_message_t create_rvc(RvcMessage value) {
@@ -125,14 +141,20 @@ CAN_message_t create_rvc(RvcMessage value) {
 }
 
 TireRpmMessage parse_tire_rpm(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TireRpm && msg.len == 5);
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::TireRpm) && msg.len == 5);
     // Make sure the tire position is one of the valid positions.
     uint8_t tire_position = msg.buf[0];
-    SAFETY_ASSERT(tire_position < 4);
+    SAFETY_ASSERT(tire_position <= 3);
 
     float value = read_f32_le(&msg.buf[1]);
 
-    return (TireRpmMessage) { (TirePosition)tire_position, value };
+    TireRpmMessage result;
+    result.position = static_cast<TirePosition>(tire_position);
+    result.value = value;
+
+    return result;
 }
 
 CAN_message_t create_tire_rpm(TireRpmMessage value) {
@@ -143,21 +165,25 @@ CAN_message_t create_tire_rpm(TireRpmMessage value) {
 }
 
 TireTemperatureMessage parse_tire_temperature(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::TireTemperature && msg.len == 7);
-    // Make sure the tire position is one of the valid positions.
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::TireTemperature) && msg.len == 7);
+    /* Make sure the tire position is one of the valid positions. */
     uint8_t tire_position = msg.buf[0];
-    SAFETY_ASSERT(tire_position < 4);
+    SAFETY_ASSERT(tire_position <= 3);
 
-    int16_t inner = read_i16_le(&msg.buf[1]);
-    int16_t outer = read_i16_le(&msg.buf[3]);
-    int16_t core = read_i16_le(&msg.buf[5]);
+    TireTemperatureMessage temps;
+    temps.position = static_cast<TirePosition>(tire_position);
+    temps.inner = read_i16_le(&msg.buf[1]);
+    temps.outer = read_i16_le(&msg.buf[1]);
+    temps.core  = read_i16_le(&msg.buf[1]);
 
-    return (TireTemperatureMessage) { (TirePosition)tire_position, inner, outer, core };
+    return temps;
 }
 
 CAN_message_t create_tire_temperature(TireTemperatureMessage value) {
     CAN_message_t new_message = empty_can_message(MessageId::TireTemperature, 7);
-    new_message.buf[0] = (uint8_t)value.position;
+    new_message.buf[0] = static_cast<uint8_t>(value.position);
 
     write_i16_le(&new_message.buf[1], value.inner);
     write_i16_le(&new_message.buf[3], value.outer);
@@ -167,12 +193,14 @@ CAN_message_t create_tire_temperature(TireTemperatureMessage value) {
 }
 
 LapMessage parse_lap(CAN_message_t msg) {
-    SAFETY_ASSERT(msg.id == (uint8_t)MessageId::Lap);
-    // Make sure the lap message is one of the valid types.
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::Lap) && msg.len >= 1);
+    /* Make sure the lap message is one of the valid types. */
     uint8_t lap_type = msg.buf[0];
     SAFETY_ASSERT(lap_type < 5);
 
-    return (LapMessage)lap_type;
+    return static_cast<LapMessage>(lap_type);
 }
 
 CAN_message_t create_lap(LapMessage value) {
@@ -332,14 +360,17 @@ MotorInternalStates parse_motor_internal_states(CAN_message_t msg) {
      * We use the cast to extract the CAN message id from its name. */
     SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::InternalStates));
 
+    MotorInternalStates result;
+
     /* Make sure buf[0] is safe to cast to VsmState. */
     SAFETY_ASSERT(msg.buf[0] <= 7 || (msg.buf[0] >= 14 && msg.buf[0] <= 15));
-    VsmState vsm_state = static_cast<VsmState>(msg.buf[0]);
-    uint8_t pwm_frequency = msg.buf[1];
+    result.vsm_state = static_cast<VsmState>(msg.buf[0]);
+
+    result.pwm_frequency = msg.buf[1];
 
     /* Make sure buf[2] is safe to cast to InverterState. */
     SAFETY_ASSERT(msg.buf[2] <= 12);
-    InverterState inverter_state = static_cast<InverterState>(msg.buf[2]);
+    result.inverter_state = static_cast<InverterState>(msg.buf[2]);
 
     RelayState relay_state;
     relay_state.relay_one   = BIT_READ(msg.buf[3], 0);
@@ -348,17 +379,148 @@ MotorInternalStates parse_motor_internal_states(CAN_message_t msg) {
     relay_state.relay_four  = BIT_READ(msg.buf[3], 3);
     relay_state.relay_five  = BIT_READ(msg.buf[3], 4);
     relay_state.relay_six   = BIT_READ(msg.buf[3], 5);
+    /* Ignore bits 6 and 7. */
+    result.relay_state = relay_state;
 
-    InverterRunMode inverter_run_mode;
     if (BIT_READ(msg.buf[4], 0)) {
-        inverter_run_mode = InverterRunMode::SpeedMode;
+        result.inverter_run_mode = InverterRunMode::SpeedMode;
     } else {
-        inverter_run_mode = InverterRunMode::TorqueMode;
+        result.inverter_run_mode = InverterRunMode::TorqueMode;
     }
 
-    bool self_sensing_assist_enable = BIT_READ(msg.buf[4], 1);
+    result.self_sensing_assist_enable = BIT_READ(msg.buf[4], 1);
 
-    // FIXME properly parse this
+    uint8_t inverter_active_discharge_state = msg.buf[4] >> 5;
+    /* FIXME this assert may be too strong, as the docs state that
+     * "All other states are reserved for future use." May be better
+     * to provide a default if it's out of range. */
+    SAFETY_ASSERT(inverter_active_discharge_state <= 4);
+    result.inverter_active_discharge_state =
+        static_cast<InverterActiveDischargeState>(inverter_active_discharge_state);
+
+    if (BIT_READ(msg.buf[5], 0)) {
+        result.inverter_command_mode = InverterCommandMode::VsmMode;
+    } else {
+        result.inverter_command_mode = InverterCommandMode::CanMode;
+    }
+
+    result.rolling_counter_value = msg.buf[5] >> 4;
+
+    result.inverter_enable_state = BIT_READ(msg.buf[6], 0);
+
+    if (BIT_READ(msg.buf[6], 1)) {
+        result.burst_model_mode = BurstModelMode::HighSpeed;
+    } else {
+        result.burst_model_mode = BurstModelMode::Stall;
+    }
+
+    result.start_mode_active = BIT_READ(msg.buf[6], 6);
+
+    result.inverter_enable_lockout = BIT_READ(msg.buf[6], 7);
+
+    if (BIT_READ(msg.buf[7], 0)) {
+        result.direction_command = MotorDirection::Forward;
+    } else {
+        result.direction_command = MotorDirection::Reverse;
+    }
+
+    result.bms_active = BIT_READ(msg.buf[7], 1);
+
+    result.bms_limiting_torque = BIT_READ(msg.buf[7], 2);
+
+    result.limit_max_speed = BIT_READ(msg.buf[7], 3);
+
+    result.limit_hot_spot = BIT_READ(msg.buf[7], 4);
+
+    result.low_speed_limiting = BIT_READ(msg.buf[7], 5);
+
+    result.coolant_temperature_limiting = BIT_READ(msg.buf[7], 6);
+
+    result.limit_stall_burst_model = BIT_READ(msg.buf[7], 1);
+
+    return result;
+}
+
+MotorFaultCodes parse_motor_fault_codes(CAN_message_t msg) {
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::FaultCodes) && msg.len == 8);
+
+    MotorFaultCodes result;
+
+    result.hardware_gate_or_desaturation_fault_first = BIT_READ(msg.buf[0], 0);
+    result.hardware_overcurrent_fault           = BIT_READ(msg.buf[0], 1);
+    result.accelerator_shorted                  = BIT_READ(msg.buf[0], 2);
+    result.accelerator_open                     = BIT_READ(msg.buf[0], 3);
+    result.current_sensor_low                   = BIT_READ(msg.buf[0], 4);
+    result.current_sensor_high                  = BIT_READ(msg.buf[0], 5);
+    result.module_temperature_low               = BIT_READ(msg.buf[0], 6);
+    result.module_temperature_high              = BIT_READ(msg.buf[0], 7);
+
+    result.control_pcb_temperature_low          = BIT_READ(msg.buf[1], 0);
+    result.control_pcb_temperature_high         = BIT_READ(msg.buf[1], 1);
+    result.gate_drive_pcb_temperature_low       = BIT_READ(msg.buf[1], 2);
+    result.gate_drive_pcb_temperature_high      = BIT_READ(msg.buf[1], 3);
+    result.sense_voltage_low_5v                 = BIT_READ(msg.buf[1], 4);
+    result.sense_voltage_high_5v                = BIT_READ(msg.buf[1], 5);
+    result.sense_voltage_low_12v                = BIT_READ(msg.buf[1], 6);
+    result.sense_voltage_high_12v               = BIT_READ(msg.buf[1], 7);
+
+    result.sense_voltage_low_2_5v               = BIT_READ(msg.buf[2], 0);
+    result.sense_voltage_high_2_5v              = BIT_READ(msg.buf[2], 1);
+    result.sense_voltage_low_1_5v               = BIT_READ(msg.buf[2], 2);
+    result.sense_voltage_high_1_5v              = BIT_READ(msg.buf[2], 3);
+    result.dc_bus_voltage_high                  = BIT_READ(msg.buf[2], 4);
+    result.dc_bus_voltage_low                   = BIT_READ(msg.buf[2], 5);
+    result.pre_charge_timeout                   = BIT_READ(msg.buf[2], 6);
+    result.pre_charge_voltage_failure           = BIT_READ(msg.buf[2], 7);
+
+    result.eeprom_checksum_invalid              = BIT_READ(msg.buf[3], 0);
+    result.eeprom_data_out_of_range             = BIT_READ(msg.buf[3], 1);
+    result.eeprom_update_required               = BIT_READ(msg.buf[3], 2);
+    result.hardware_dc_bus_over_voltage_during_initialization = BIT_READ(msg.buf[3], 3);
+    result.gate_drive_initialization            = BIT_READ(msg.buf[3], 4);
+    result.reserved_bit_29                      = BIT_READ(msg.buf[3], 5);
+    result.brake_shorted                        = BIT_READ(msg.buf[3], 6);
+    result.brake_open                           = BIT_READ(msg.buf[3], 7);
+
+    result.motor_over_speed_fault               = BIT_READ(msg.buf[4], 0);
+    result.over_current_fault                   = BIT_READ(msg.buf[4], 1);
+    result.over_voltage_fault                   = BIT_READ(msg.buf[4], 2);
+    result.inverter_over_temperature_fault      = BIT_READ(msg.buf[4], 3);
+    result.accelerator_input_shorted_fault      = BIT_READ(msg.buf[4], 4);
+    result.accelerator_input_open_fault         = BIT_READ(msg.buf[4], 5);
+    result.direction_command_fault              = BIT_READ(msg.buf[4], 6);
+    result.inverter_response_timeout_fault      = BIT_READ(msg.buf[4], 7);
+
+    result.hardware_gate_or_desaturation_fault_second  = BIT_READ(msg.buf[5], 0);
+    result.hardware_over_current_fault          = BIT_READ(msg.buf[5], 1);
+    result.under_voltage_fault                  = BIT_READ(msg.buf[5], 2);
+    result.can_command_message_lost_fault       = BIT_READ(msg.buf[5], 3);
+    result.motor_over_temperature_fault         = BIT_READ(msg.buf[5], 4);
+    result.reserved_bit_45                      = BIT_READ(msg.buf[5], 5);
+    result.reserved_bit_46                      = BIT_READ(msg.buf[5], 6);
+    result.reserved_bit_47                      = BIT_READ(msg.buf[5], 7);
+
+    result.brake_input_shorted_fault            = BIT_READ(msg.buf[6], 0);
+    result.brake_input_open_fault               = BIT_READ(msg.buf[6], 1);
+    result.module_a_over_temperature_fault      = BIT_READ(msg.buf[6], 2);
+    result.module_b_over_temperature_fault      = BIT_READ(msg.buf[6], 3);
+    result.module_c_over_temperature_fault      = BIT_READ(msg.buf[6], 4);
+    result.pcb_over_temperature_fault           = BIT_READ(msg.buf[6], 5);
+    result.gate_drive_board_one_over_temperature_fault = BIT_READ(msg.buf[6], 6);
+    result.gate_drive_board_two_over_temperature_fault = BIT_READ(msg.buf[6], 7);
+
+    result.gate_drive_board_three_over_temperature_fault = BIT_READ(msg.buf[7], 0);
+    result.current_sensor_fault                          = BIT_READ(msg.buf[7], 1);
+    result.gate_driver_over_voltage                      = BIT_READ(msg.buf[7], 2);
+    result.hardware_dc_bus_over_voltage_fault_old        = BIT_READ(msg.buf[7], 3);
+    result.hardware_dc_bus_over_voltage_fault_new        = BIT_READ(msg.buf[7], 4);
+    result.reserved_bit_61                               = BIT_READ(msg.buf[7], 5);
+    result.resolver_not_connected                        = BIT_READ(msg.buf[7], 6);
+    result.reserved_bit_63                               = BIT_READ(msg.buf[7], 7);
+
+    return result;
 }
 
 MotorControlCommand parse_motor_control_command(CAN_message_t msg) {

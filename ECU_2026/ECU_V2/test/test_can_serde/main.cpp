@@ -110,11 +110,14 @@ void test_can_dump_parsing() {
             case MessageId::FluxInfo:
                 parse_motor_flux_info(msg);
                 break;
-            case MessageId::InternalStates:
-                // FIXME this one was really big so I haven't finished it yet.
-                break;
             case MessageId::InternalVoltages:
                 parse_motor_internal_voltages(msg);
+                break;
+            case MessageId::InternalStates:
+                parse_motor_internal_states(msg);
+                break;
+            case MessageId::FaultCodes:
+                parse_motor_fault_codes(msg);
                 break;
             case MessageId::FirmwareInfo:
                 /* Motor internal message. */

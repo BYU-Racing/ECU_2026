@@ -6,9 +6,9 @@
 #include <cstdint>
 
 /* FlexCAN_T4.h includes a ton of things we don't have available in a testing environment,
- * so we can't use it when testing. Unfortunately, `CAN_message_t` comes from FlexCAN_T4.h,
- * so we have to make a "fake" CAN_message_t so that we can run the test. This is literally
- * just copied from FlexCAN_T4.h. */
+ * so we can't use FlexCAN_T4.h when testing. Unfortunately, `CAN_message_t` comes from
+ * FlexCAN_T4.h, so we have to make a "fake" `CAN_message_t` so that we can run the test.
+ * This is literally just copied from FlexCAN_T4.h. */
 #ifdef BUILD_MODE_TEST
 typedef struct CAN_message_t {
   uint32_t id = 0;          // can identifier
@@ -334,6 +334,83 @@ struct MotorInternalStates {
     bool limit_stall_burst_model;
 };
 
+struct MotorFaultCodes {
+    bool hardware_gate_or_desaturation_fault_first; /* For whatever reason the docs have two versions of this. */
+    bool hardware_overcurrent_fault;
+    bool accelerator_shorted;
+    bool accelerator_open;
+    bool current_sensor_low;
+    bool current_sensor_high;
+    bool module_temperature_low;
+    bool module_temperature_high;
+
+    bool control_pcb_temperature_low;
+    bool control_pcb_temperature_high;
+    bool gate_drive_pcb_temperature_low;
+    bool gate_drive_pcb_temperature_high;
+    bool sense_voltage_low_5v;
+    bool sense_voltage_high_5v;
+    bool sense_voltage_low_12v;
+    bool sense_voltage_high_12v;
+
+    bool sense_voltage_low_2_5v;
+    bool sense_voltage_high_2_5v;
+    bool sense_voltage_low_1_5v;
+    bool sense_voltage_high_1_5v;
+    bool dc_bus_voltage_high;
+    bool dc_bus_voltage_low;
+    bool pre_charge_timeout;
+    bool pre_charge_voltage_failure;
+
+    bool eeprom_checksum_invalid;
+    bool eeprom_data_out_of_range;
+    bool eeprom_update_required;
+    bool hardware_dc_bus_over_voltage_during_initialization;
+    bool gate_drive_initialization; /* Gen 3 has this value reserved, only this on Gen 5. */
+    bool reserved_bit_29;
+    bool brake_shorted;
+    bool brake_open;
+
+    bool motor_over_speed_fault;
+    bool over_current_fault;
+    bool over_voltage_fault;
+    bool inverter_over_temperature_fault;
+    bool accelerator_input_shorted_fault;
+    bool accelerator_input_open_fault;
+    bool direction_command_fault;
+    bool inverter_response_timeout_fault;
+
+    bool hardware_gate_or_desaturation_fault_second; /* For whatever reason the docs have two versions of this. */
+    bool hardware_over_current_fault;
+    bool under_voltage_fault;
+    bool can_command_message_lost_fault;
+    bool motor_over_temperature_fault;
+    bool reserved_bit_45;
+    bool reserved_bit_46;
+    bool reserved_bit_47;
+
+    bool brake_input_shorted_fault;
+    bool brake_input_open_fault;
+    bool module_a_over_temperature_fault;
+    bool module_b_over_temperature_fault;
+    bool module_c_over_temperature_fault;
+    bool pcb_over_temperature_fault;
+    bool gate_drive_board_one_over_temperature_fault;
+    bool gate_drive_board_two_over_temperature_fault;
+
+    bool gate_drive_board_three_over_temperature_fault;
+    bool current_sensor_fault;
+    bool gate_driver_over_voltage; /* Gen 3 has this value reserved, only this on Gen 5. */
+
+    /* Gen _5_ has this value reserved, only this on Gen _3_. Note this was available on an older
+     * version but is no longer availabe on the newer version. */
+    bool hardware_dc_bus_over_voltage_fault_old;
+    bool hardware_dc_bus_over_voltage_fault_new; /* Gen 3 has this value reserved, only this on Gen 5. */
+    bool reserved_bit_61;
+    bool resolver_not_connected;
+    bool reserved_bit_63;
+};
+
 struct MotorControlCommand {
     int16_t torque; /* 1 = 0.1Nm. */
     int16_t speed;  /* RPM */
@@ -388,4 +465,6 @@ MotorCurrentInfo parse_motor_current_info(CAN_message_t msg);
 MotorVoltageInfo parse_motor_voltage_info(CAN_message_t msg);
 MotorFluxInfo parse_motor_flux_info(CAN_message_t msg);
 MotorInternalVoltages parse_motor_internal_voltages(CAN_message_t msg);
+MotorInternalStates parse_motor_internal_states(CAN_message_t msg);
+MotorFaultCodes parse_motor_fault_codes(CAN_message_t msg);
 MotorControlCommand parse_motor_control_command(CAN_message_t msg);
