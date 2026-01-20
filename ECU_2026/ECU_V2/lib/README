@@ -1,46 +1,5 @@
+# Project-specific libraries
 
-This directory is intended for project specific (private) libraries.
-PlatformIO will compile them to static libraries and link into the executable file.
+This folder contains code that's specific to this project, but is general enough we want to keep it out of the main `src` folder. The other really nice thing about this is we can test any code that's in `lib`, which is really helpful for making sure the CAN parser works correctly.
 
-The source code of each library should be placed in a separate directory
-("lib/your_library_name/[Code]").
-
-For example, see the structure of the following example libraries `Foo` and `Bar`:
-
-|--lib
-|  |
-|  |--Bar
-|  |  |--docs
-|  |  |--examples
-|  |  |--src
-|  |     |- Bar.c
-|  |     |- Bar.h
-|  |  |- library.json (optional. for custom build options, etc) https://docs.platformio.org/page/librarymanager/config.html
-|  |
-|  |--Foo
-|  |  |- Foo.c
-|  |  |- Foo.h
-|  |
-|  |- README --> THIS FILE
-|
-|- platformio.ini
-|--src
-   |- main.c
-
-Example contents of `src/main.c` using Foo and Bar:
-```
-#include <Foo.h>
-#include <Bar.h>
-
-int main (void)
-{
-  ...
-}
-
-```
-
-The PlatformIO Library Dependency Finder will find automatically dependent
-libraries by scanning project source files.
-
-More information about PlatformIO Library Dependency Finder
-- https://docs.platformio.org/page/librarymanager/ldf.html
+Right now, there's only two things in this folder—`can_serde.hpp` and `assert.hpp`. `assert.hpp` provides the `SAFETY_ASSERT` macro, which is used to make ensure certain invariants, such as message format or sensor reading. If `SAFETY_ASSERT` ever fails, it will run the chip's wind down code, so that if something gets out of whack we safely fail. `can_serde.hpp` takes care of generating and parsing can messages, so they're easier to work with.
