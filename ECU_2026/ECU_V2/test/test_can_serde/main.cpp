@@ -42,8 +42,12 @@ void test_can_dump_parsing() {
     /* This test reads in an .trc file that has been used in the past
      * so we can test the CAN code against actual usage. */
     std::ifstream file;
-    file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     file.open("test/test_can_serde/can-dump-1.trc");
+    if (!file) {
+        TEST_FAIL_MESSAGE("Could not open can-dump-1.trc - check the path");
+        return;
+    }
+
     std::string line_contents;
 
     while (std::getline(file, line_contents)) {
@@ -119,8 +123,17 @@ void test_can_dump_parsing() {
             case MessageId::FaultCodes:
                 parse_motor_fault_codes(msg);
                 break;
+            case MessageId::TorqueAndTimerInfo:
+                parse_motor_torque_and_timer_info(msg);
+                break;
+            case MessageId::ModIndexAndFlux:
+                parse_motor_mod_index_and_flux(msg);
+                break;
             case MessageId::FirmwareInfo:
                 /* Motor internal message. */
+                break;
+            case MessageId::TorqueCapability:
+                parse_motor_torque_capability(msg);
                 break;
             case MessageId::ControlCommand:
                 parse_motor_control_command(msg);
@@ -135,8 +148,11 @@ void test_can_dump_parsing() {
                     case 128:
                     case 1713:
                     case 1744:
-                    case 406451072:
+                    case 403105268:
+                    case 403105780:
+                    case 403106292:
                     case 406385536:
+                    case 406451072:
                     case 418316160:
                         // FIXME these are mystery messages.
                         break;

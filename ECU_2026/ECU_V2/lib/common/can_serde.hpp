@@ -75,7 +75,7 @@ enum class MessageId: uint32_t {
     /* Commanded torque, torque feedback, and power-on timer. */
     TorqueAndTimerInfo = 172,
     /* Modulation Index, Flux Weakening Output, D-axis and Q-axis currents. */
-    ModulationIndex = 173,
+    ModIndexAndFlux = 173,
     /* For factory use only - not for CAN use. */
     FirmwareInfo = 174,
     /* Downloadable only - not for CAN use. */
@@ -411,6 +411,25 @@ struct MotorFaultCodes {
     bool reserved_bit_63;
 };
 
+struct MotorTorqueAndTimerInfo {
+    int16_t commanded_torque;
+    int16_t torque_feedback;
+
+    /* This timer is updated every 3 msec. This timer will roll-over in approximately 5
+     * months. The timer will reset to 0 at power on. Monitoring this can be useful to show
+     * when a reset of the processor has occurred.
+     * 1 = 3ms = 0.003s */
+    uint32_t power_on_timer;
+};
+
+/* Full title is Modulation Index & Flux Weakening Output Information */
+struct MotorModIndexAndFlux {
+    int16_t modulation_index; /* Assumed to be signed. */
+    int16_t flux_weakening_output; /* This is the current output of the flux regulator. 1 = 0.1A */
+    int16_t id_command; /* The commanded D-axis current. 1 = 0.1A */
+    int16_t iq_command; /* The commanded Q-axis current. 1 = 0.1A */
+};
+
 struct MotorControlCommand {
     int16_t torque; /* 1 = 0.1Nm. */
     int16_t speed;  /* RPM */
@@ -467,4 +486,7 @@ MotorFluxInfo parse_motor_flux_info(CAN_message_t msg);
 MotorInternalVoltages parse_motor_internal_voltages(CAN_message_t msg);
 MotorInternalStates parse_motor_internal_states(CAN_message_t msg);
 MotorFaultCodes parse_motor_fault_codes(CAN_message_t msg);
+MotorTorqueAndTimerInfo parse_motor_torque_and_timer_info(CAN_message_t msg);
+MotorModIndexAndFlux parse_motor_mod_index_and_flux(CAN_message_t msg);
+int16_t parse_motor_torque_capability(CAN_message_t msg);
 MotorControlCommand parse_motor_control_command(CAN_message_t msg);

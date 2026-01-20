@@ -523,6 +523,41 @@ MotorFaultCodes parse_motor_fault_codes(CAN_message_t msg) {
     return result;
 }
 
+MotorTorqueAndTimerInfo parse_motor_torque_and_timer_info(CAN_message_t msg) {
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::TorqueAndTimerInfo) && msg.len == 8);
+
+    MotorTorqueAndTimerInfo result;
+    result.commanded_torque = read_i16_le(&msg.buf[0]);
+    result.torque_feedback = read_i16_le(&msg.buf[2]);
+    result.power_on_timer = read_u32_le(&msg.buf[4]);
+
+    return result;
+}
+
+MotorModIndexAndFlux parse_motor_mod_index_and_flux(CAN_message_t msg) {
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::ModIndexAndFlux) && msg.len == 8);
+
+    MotorModIndexAndFlux result;
+    result.modulation_index = read_i16_le(&msg.buf[0]);
+    result.flux_weakening_output = read_i16_le(&msg.buf[2]);
+    result.id_command = read_i16_le(&msg.buf[4]);
+    result.iq_command = read_i16_le(&msg.buf[6]);
+
+    return result;
+}
+
+int16_t parse_motor_torque_capability(CAN_message_t msg) {
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
+     * We use the cast to extract the CAN message id from its name. */
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::TorqueCapability) && msg.len >= 2);
+
+    return read_i16_le(&msg.buf[0]);
+}
+
 MotorControlCommand parse_motor_control_command(CAN_message_t msg) {
     /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
      * We use the cast to extract the CAN message id from its name. */
