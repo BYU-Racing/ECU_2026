@@ -489,4 +489,5 @@ MotorFaultCodes parse_motor_fault_codes(CAN_message_t msg);
 MotorTorqueAndTimerInfo parse_motor_torque_and_timer_info(CAN_message_t msg);
 MotorModIndexAndFlux parse_motor_mod_index_and_flux(CAN_message_t msg);
 int16_t parse_motor_torque_capability(CAN_message_t msg);
+CAN_message_t create_motor_control_command(MotorControlCommand value);
 MotorControlCommand parse_motor_control_command(CAN_message_t msg);

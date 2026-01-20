@@ -6,11 +6,12 @@
 
 /* We do a lot of bit mucking below, so we'll use these quite a bit. */
 #define BIT_READ(value, bit) ((bool)(((value) >> (bit)) & 0x01))
-#define BIT_SET(value, bit) ((value) |= (1UL << (bit)))
+#define BIT_SET_TO(value, bit, set_to) if (set_to) { (value) |= (1UL << (bit)); }
 
 CAN_message_t empty_can_message(MessageId id, uint8_t len) {
     CAN_message_t result = {0};
-    result.id = (uint8_t)id;
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises. */
+    result.id = static_cast<uint8_t>(id);
     result.len = len;
     return result;
 }
@@ -67,7 +68,7 @@ void write_f32_le(uint8_t* buf, float value) {
 bool parse_start_switch(CAN_message_t msg) {
     /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
      * We use the cast to extract the CAN message id from its name. */
-    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::StartSwitch));
+    SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::StartSwitch) && msg.len >= 1);
     return msg.buf[0] != 0;
 }
 
@@ -175,8 +176,8 @@ TireTemperatureMessage parse_tire_temperature(CAN_message_t msg) {
     TireTemperatureMessage temps;
     temps.position = static_cast<TirePosition>(tire_position);
     temps.inner = read_i16_le(&msg.buf[1]);
-    temps.outer = read_i16_le(&msg.buf[1]);
-    temps.core  = read_i16_le(&msg.buf[1]);
+    temps.outer = read_i16_le(&msg.buf[3]);
+    temps.core  = read_i16_le(&msg.buf[5]);
 
     return temps;
 }
@@ -556,6 +557,23 @@ int16_t parse_motor_torque_capability(CAN_message_t msg) {
     SAFETY_ASSERT(msg.id == static_cast<uint8_t>(MessageId::TorqueCapability) && msg.len >= 2);
 
     return read_i16_le(&msg.buf[0]);
+}
+
+CAN_message_t create_motor_control_command(MotorControlCommand value) {
+    CAN_message_t new_message = empty_can_message(MessageId::ControlCommand, 8);
+
+    write_i16_le(&new_message.buf[0], value.torque);
+    write_i16_le(&new_message.buf[2], value.speed);
+
+    new_message.buf[4] = static_cast<uint8_t>(value.direction);
+
+    BIT_SET_TO(new_message.buf[5], 0, value.enable_inverter);
+    BIT_SET_TO(new_message.buf[5], 1, value.inverter_discharge);
+    BIT_SET_TO(new_message.buf[5], 2, value.override_speed);
+
+    write_i16_le(&new_message.buf[6], value.torque_limit);
+
+    return new_message;
 }
 
 MotorControlCommand parse_motor_control_command(CAN_message_t msg) {
