@@ -41,32 +41,32 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
     /* If we received a CAN message, update the corresponding value. */
     switch (static_cast<MessageId>(msg.id)) {
         case MessageId::StartSwitch:
-            start_switch_on = parse_start_switch(msg);
+            this->start_switch_on = parse_start_switch(msg);
             break;
         case MessageId::ThrottleOnePosition:
-            throttle1_pos = parse_throttle_one_position(msg);
+            this->throttle1_pos = parse_throttle_one_position(msg);
             break;
         case MessageId::ThrottleTwoPosition:
-            throttle2_pos = parse_throttle_two_position(msg);
+            this->throttle2_pos = parse_throttle_two_position(msg);
             break;
         case MessageId::BrakePressure:
-            brake_pressure = parse_brake_pressure(msg);
-            SAFETY_ASSERT(brake_pressure > BRAKE_PRESSURE_MIN);
+            this->brake_pressure = parse_brake_pressure(msg);
+            SAFETY_ASSERT(this->brake_pressure > BRAKE_PRESSURE_MIN);
             break;
         default:
             break;
     }
 
     /* If both throttles have new values, average them and recalculate the throttle amount. */
-    if (throttle1_pos.has_value() && throttle2_pos.has_value()) {
-        calculated_torque = throttle_map(*throttle1_pos, *throttle2_pos);
+    if (this->throttle1_pos.has_value() && this->throttle2_pos.has_value()) {
+        this->calculated_torque = throttle_map(*this->throttle1_pos, *this->throttle2_pos);
         /* After we read the values, invalidate them as they're now stale. */
-        throttle1_pos = std::nullopt;
-        throttle2_pos = std::nullopt;
+        this->throttle1_pos = std::nullopt;
+        this->throttle2_pos = std::nullopt;
     }
 
     /* Car startup sequence. */
-    if (car_fully_on) {
+    if (this->car_fully_on) {
         /* No need to do the motor startup sequence if the motor is already enabled. */
     } else {
         /* Startup sequence needed. In order to start up the motor, we need two things:
@@ -75,40 +75,40 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
          * Once these preconditions are met, we can do the startup sequence. 
          * We will wait two seconds before fully starting up, or abort if
          * one of the preconditions stops holding. */
-        if ((brake_pressure >= ACTIVATE_BRAKE_THRESHOLD) && start_switch_on) {
-            if (!startup_countdown.started()) {
-                startup_countdown.start(current_time_ms, STARTUP_DELAY_MS);
-            } else if (startup_countdown.triggerReached(current_time_ms)) {
+        if ((this->brake_pressure >= ACTIVATE_BRAKE_THRESHOLD) && this->start_switch_on) {
+            if (!this->startup_countdown.started()) {
+                this->startup_countdown.start(current_time_ms, STARTUP_DELAY_MS);
+            } else if (this->startup_countdown.triggerReached(current_time_ms)) {
                 /* Good to go! */
-                car_fully_on = true;
+                this->car_fully_on = true;
             }
         } else {
             /* One of the preconditions failed, so we need to reset the timer. */
-            startup_countdown.cancel();
+            this->startup_countdown.cancel();
         }
     }
 
-    if (!start_switch_on) {
+    if (!this->start_switch_on) {
         /* Pretty self-explanatory: if the start switch turns off, the car turns off. */
-        car_fully_on = false;
+        this->car_fully_on = false;
     }
 }
 
 
 std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms) {
     /* Engine is enabled if all the preconditions of `car_fully_on` passed. */
-    engine_enabled = car_fully_on;
+    this->engine_enabled = this->car_fully_on;
 
-    SAFETY_ASSERT(brake_pressure < BRAKE_THRESHOLD);
+    SAFETY_ASSERT(this->brake_pressure < BRAKE_THRESHOLD);
 
-    if (engine_enabled) {
+    if (this->engine_enabled) {
         /* We pace how often motor control messages are passed along the CAN bus.
         * We do this by using a trigger, which triggers after a certain amount
         * of time, sends the message, restarts itself, and that continues for
         * infinity. */
-        if (!motor_control_message_pacing.started()) {
-            motor_control_message_pacing.start(current_time_ms, 15/*ms*/);
-        } else if (motor_control_message_pacing.triggerReached(current_time_ms)) {
+        if (!this->motor_control_message_pacing.started()) {
+            this->motor_control_message_pacing.start(current_time_ms, 15/*ms*/);
+        } else if (this->motor_control_message_pacing.triggerReached(current_time_ms)) {
             MotorControlCommand cmd;
             cmd.torque = 0;
             cmd.speed = 0;
@@ -121,7 +121,7 @@ std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms) {
             return create_motor_control_command(cmd);
         }
     } else {
-        motor_control_message_pacing.cancel();
+        this->motor_control_message_pacing.cancel();
     }
 }
 
