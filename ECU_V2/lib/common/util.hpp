@@ -3,9 +3,9 @@
 
 class Trigger {
 public:
-    uint32_t start(uint32_t current_time_ms, uint32_t target_duration);
+    void start(uint32_t current_time_ms, uint32_t target_duration);
     bool started();
-    void Trigger::primeTrigger(uint32_t current_time_ms);
+    void primeTrigger(uint32_t current_time_ms);
     bool triggerReached(uint32_t current_time_ms);
     void cancel();
 

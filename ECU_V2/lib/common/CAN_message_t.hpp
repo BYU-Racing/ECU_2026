@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 /* FlexCAN_T4.h includes a ton of things we don't have available in a testing environment,
  * so we can't use FlexCAN_T4.h when testing. Unfortunately, `CAN_message_t` comes from
  * FlexCAN_T4.h, so we have to make a "fake" `CAN_message_t` so that we can run the test.

@@ -1,6 +1,6 @@
 #include "util.hpp"
 
-uint32_t Trigger::start(uint32_t current_time_ms, uint32_t duration) {
+void Trigger::start(uint32_t current_time_ms, uint32_t duration) {
     started_at = current_time_ms;
     target_duration = duration;
 }

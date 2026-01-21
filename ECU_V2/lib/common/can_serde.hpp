@@ -439,7 +439,7 @@ CAN_message_t create_throttle_one_position(uint16_t value);
 uint16_t parse_throttle_two_position(CAN_message_t msg);
 CAN_message_t create_throttle_two_position(uint16_t value);
 uint16_t parse_brake_pressure(CAN_message_t msg);
-CAN_message_t create_throttle_brake_pressure(uint16_t value);
+CAN_message_t create_brake_pressure(uint16_t value);
 RvcMessage parse_rvc(CAN_message_t msg);
 CAN_message_t create_rvc(RvcMessage value);
 TireRpmMessage parse_tire_rpm(CAN_message_t msg);

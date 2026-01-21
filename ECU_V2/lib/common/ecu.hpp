@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <optional>
 
+#include "constants.hpp"
 #include "CAN_message_t.hpp"
 #include "util.hpp"
 
@@ -34,13 +35,11 @@ private:
     /* Whether the car is fully on (not starting up). */
     bool car_fully_on = false;
 
-    bool engine_enabled = false;
-
     /* Whether the car is switched on or not. */
     bool start_switch_on = false;
 
     /* How far the brake is pressed down. */
-    uint16_t brake_pressure = 0;
+    uint16_t brake_pressure = BRAKE_PRESSURE_MIN;
 
     /* Calculated torque is sent directly to the motor. */
     int16_t calculated_torque = 0;
