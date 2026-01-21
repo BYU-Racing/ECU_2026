@@ -47,14 +47,21 @@ void setup() {
   Serial.println("============================================");
 }
 
+/* This is used to periodically send state updates with the contents of ECU. */
+Trigger state_print_timer = {};
+
 void loop() {
+    /* The ECU does not keep track of what time it is, nor does it use `millis`,
+     * so we always have to tell it what time it is. */
     uint32_t current_time_ms = millis();
 
+    /* Receive a message and have the ECU process it. */
     CAN_message_t rmsg;
     if (MotorCAN.read(rmsg)) {
         ECU.processMessage(current_time_ms, rmsg);
     }
 
+    /* Generate all outgoing messages and send each. */
     while (true) {
         std::optional<CAN_message_t> to_send = ECU.emitMessage(current_time_ms);
         if (to_send.has_value()) {
@@ -63,35 +70,11 @@ void loop() {
             break;
         }
     }
-}
 
-void user_update(int throttle1,
-                 int throttle2,
-                 int brake_val,
-                 bool switch_status,
-                 int torque,
-                 int system_status)
-{
-    Serial.println();
-    Serial.println("========== SYSTEM STATUS ==========");
-
-    Serial.print("Throttle 1   : ");
-    Serial.println(throttle1);
-
-    Serial.print("Throttle 2   : ");
-    Serial.println(throttle2);
-
-    Serial.print("Brake        : ");
-    Serial.println(brake_val);
-
-    Serial.print("Switch       : ");
-    Serial.println(switch_status);
-
-    Serial.print("Torque Cmd   : ");
-    Serial.println(torque);
-
-    Serial.print("System State : ");
-    Serial.println(system_status);
-
-    Serial.println("==================================");
+    /* Used to space out state printing messages. */
+    if (!state_print_timer.started()) {
+        state_print_timer.start(current_time_ms, 100/*ms*/);
+    } else if (state_print_timer.triggerReached(current_time_ms)) {
+        ECU.printState();
+    }
 }
