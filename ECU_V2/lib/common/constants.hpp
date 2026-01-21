@@ -2,6 +2,10 @@
 
 #include <cstdint>
 
+/* COMMUNICATIONS */
+constexpr long SERIAL_BAUD_RATE = 115200;
+constexpr uint32_t CAN_BAUD_RATE = 250000;
+
 constexpr int16_t THROTTLE1_MIN = 0;
 constexpr int16_t THROTTLE1_MAX = 160;
 
