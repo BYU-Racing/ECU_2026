@@ -1,8 +1,11 @@
+#include <cmath>
+#include <optional>
+
 #include <Arduino.h>
 #include <FlexCAN_T4.h>
-#include <cmath>
-#include <assert.hpp>
-#include <can_serde.hpp>
+
+#include "assert.hpp"
+#include "can_serde.hpp"
 
 using namespace std;
 
@@ -13,7 +16,7 @@ bool collect_switch(CAN_message_t rmsg);
 int brake_shutoff(int brake_val);
 
 int throttle_map(int throttle1, int throttle2);
-int map(int input, int min, int max);
+int32_t map(int32_t input, int32_t min, int32_t max);
 
 int state_check(int torque, int brake_val, bool switch_status);
 
@@ -25,6 +28,11 @@ void user_update(int throttle1, int throttle2, int brake_val, bool switch_status
 
 void panic_handler(const char* file, int line, const char* msg) {
     /* Shut everything down. */
+    CAN_message_t shutdown_message = empty_can_message(MessageId::ControlCommand, 8);
+    /* `empty_can_message` is guaranteed to generate a message full of zeroes,
+     * and since this is panic wind down code, it's best to keep it as simple as
+     * possible, so we don't use the normal message creation function. */
+    MotorCAN.write(shutdown_message);
 
     /* Loop forever so we never do anything after the panic. */
     while (true) {
@@ -49,7 +57,9 @@ const int THROTTLE1_MIN = 0;
 const int THROTTLE1_MAX = 160;
 const int THROTTLE2_MIN = 0;
 const int THROTTLE2_MAX = 70;
-const int THROTTLE_DISAGREE = 10;
+
+/* Maximum allowed difference between the two throttles in %. */
+const uint16_t THROTTLE_DISAGREE = 10;
 
 const int MOTOR_COMMAND_ID = 192;
 const int switch_ID = 0;
@@ -69,12 +79,7 @@ int throttle2 = 0;
 int brake_val = 0;
 int switch_status = false;
 
-int throttleA = 0;
-int throttleB = 0;
-
 // FUNCTION GENERATED
-int torque;
-int torque_percentage;
 int system_status;
 
 bool throttle1UPDATE;
@@ -105,94 +110,87 @@ void setup() {
 
 }
 
+int16_t calculated_torque = 0;
+
 void loop() {
-  CAN_message_t rmsg;
-  if (MotorCAN.read(rmsg)) { // If there is a CAN message recieved update the corresponding value
-    switch (rmsg.id) {
-      case switch_ID:
-        switch_status = collect_switch(rmsg);
-        break;
-      case THROTTLE1_ID:
-        torque = collect_throttle(rmsg);
-        break;
-      case THROTTLE2_ID:
-        torque = collect_throttle(rmsg);
-        break;
-      case BRAKE_ID:
-        brake_val = parse_brake_pressure(rmsg);
-        break;
-      default:
-        break;
+    delay(15);
+
+    bool start_switch_on = false;
+
+    CAN_message_t rmsg;
+    if (MotorCAN.read(rmsg)) { 
+      /* If we received a CAN message, update the corresponding value. */
+      switch (static_cast<MessageId>(rmsg.id)) {
+          case MessageId::StartSwitch:
+            start_switch_on = parse_start_switch(rmsg);
+            break;
+          case MessageId::ThrottleOnePosition:
+            throttle1_pos = parse_throttle_one_position(rmsg);
+            break;
+          case MessageId::ThrottleTwoPosition:
+            throttle2_pos = parse_throttle_two_position(rmsg);
+            break;
+          case MessageId::BrakePressure:
+            brake_val = parse_brake_pressure(rmsg);
+            break;
+          default:
+            break;
+      }
     }
-  }
 
-  handle_activation(brake_val, switch_status);
+    if (throttle1_pos.has_value() && throttle2_pos.has_value()) {
+      calculated_torque = throttle_map(*throttle1_pos, *throttle2_pos);
+      throttle1_pos = std::nullopt;
+      throttle2_pos = std::nullopt;
+    }
 
-  if (brake_shutoff(brake_val)) {
-    brake_fault = true;
-  }
+    handle_activation(brake_val, switch_status);
 
-  if (brake_fault) {
-    torque = 0;
-    system_status = 0;
+    if (brake_shutoff(brake_val)) {
+      brake_fault = true;
+    }
+
+    if (brake_fault) {
+      torque = 0;
+      system_status = 0;
+      send_message(system_status, torque);
+      return;
+    }
+
+    SAFETY_ASSERT(!brake_fault);
+    SAFETY_ASSERT(!throttle_fault);
+
+
+    system_status = state_check(torque, brake_val, switch_status);
+
     send_message(system_status, torque);
-    return;
-  }
 
-  system_status = state_check(torque, brake_val, switch_status);
-
-  send_message(system_status, torque);
-
-  user_update(throttle1, throttle2, brake_val, switch_status, torque, system_status);
-}
-
-bool collect_switch(CAN_message_t rmsg) {
-  return parse_start_switch(rmsg);
+    user_update(throttle1, throttle2, brake_val, switch_status, torque, system_status);
 }
 
 int brake_shutoff(int brake_val) {
-  if (brake_val < BRAKE_MIN) {
-    return true;
-  }
-  return false;
-}
-
-int collect_throttle(CAN_message_t rmsg) {
-    if(rmsg.id == THROTTLE1_ID) {
-        throttle1 = parse_throttle_one_position(rmsg);
-        throttle1UPDATE = true;
-    } else if (rmsg.id == THROTTLE2_ID) {
-        throttle2 = parse_throttle_two_position(rmsg);
-        throttle2UPDATE = true;
+    if (brake_val < BRAKE_MIN) {
+        return true;
     }
-
-    if(throttle1UPDATE && throttle2UPDATE) {
-    torque = throttle_map(throttle1, throttle2);
-    throttle1UPDATE = false;
-    throttle2UPDATE = false;
-  }
-  
-  return torque;
+    return false;
 }
 
-int throttle_map(int throttle1, int throttle2) {
-  throttleA = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX);
-  throttleB = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX);
+int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
+    int32_t throttleA = map(static_cast<int32_t>(throttle1), THROTTLE1_MIN, THROTTLE1_MAX);
+    int32_t throttleB = map(static_cast<int32_t>(throttle2), THROTTLE2_MIN, THROTTLE2_MAX);
 
-  if (abs(throttleA - throttleB) > THROTTLE_DISAGREE) {
-    throttle_fault = true;
-    return 0;
-  }
-  
-  torque_percentage = (throttleA + throttleB) / 2;
+    SAFETY_ASSERT(abs(throttleA - throttleB) < THROTTLE_DISAGREE);
 
-  torque = map(torque_percentage, MIN_THROTTLE, MAX_THROTTLE);
+    int32_t average = (throttleA + throttleB) / 2;
 
-  if(torque < 0) {
-      torque = 0;
-  }
+    /* Make sure the average can fit into the new size (int16_t). */
+    SAFETY_ASSERT(average >= INT16_MIN && average <= INT16_MAX);
+    int16_t torque_percentage = static_cast<int16_t>(average);
 
-  return torque;
+    int16_t torque_mapped = map(torque_percentage, MIN_THROTTLE, MAX_THROTTLE);
+    SAFETY_ASSERT(torque_mapped >= 0);
+
+    return torque_mapped;
 }
 
 void handle_activation(int brake_val, bool switch_status) {
@@ -217,7 +215,8 @@ void handle_activation(int brake_val, bool switch_status) {
   }
 }
 
-int map(int input, int min, int max) {
+/* FIXME this is not overflow safe. */
+int32_t map(int32_t input, int32_t min, int32_t max) {
   if (input < min) {
     input = min;
   } if (input > max) {
