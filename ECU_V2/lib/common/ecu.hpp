@@ -16,6 +16,9 @@ public:
      * along the CAN bus. */
     std::optional<CAN_message_t> emitMessage(uint32_t current_time_ms);
 
+    /* Uses PRINTF for all printing. */
+    void printState();
+
 private:
     /* What is the purpose of `std::optional`? It lets us signal that this value may not have a value.
     * Since at the beginning of the program, we don't know the throttle's position, we initialize

@@ -155,3 +155,25 @@ std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms) {
     return std::nullopt;
 }
 
+void Ecu::printState() {
+    PRINTF("=== ECU State ===\n");
+    PRINTF("car_fully_on: %s\n", this->car_fully_on ? "true" : "false");
+    PRINTF("start_switch_on: %s\n", this->start_switch_on ? "true" : "false");
+    PRINTF("brake_pressure: %u\n", this->brake_pressure);
+    PRINTF("calculated_torque: %d\n", this->calculated_torque);
+
+    if (this->throttle1_pos.has_value()) {
+        PRINTF("throttle1_pos: %u\n", *this->throttle1_pos);
+    } else {
+        PRINTF("throttle1_pos: (none)\n");
+    }
+
+    if (this->throttle2_pos.has_value()) {
+        PRINTF("throttle2_pos: %u\n", *this->throttle2_pos);
+    } else {
+        PRINTF("throttle2_pos: (none)\n");
+    }
+
+    PRINTF("startup_countdown: %s\n", this->startup_countdown.started() ? "started" : "not started");
+    PRINTF("motor_control_message_pacing: %s\n", this->motor_control_message_pacing.started() ? "started" : "not started");
+}
