@@ -32,18 +32,22 @@ int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t ne
 }
 
 int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
+    /* Make sure the throttle values are in range. */
+    SAFETY_ASSERT(throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX);
+    SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
+
     int64_t throttleA = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
     int64_t throttleB = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
 
+    /* Make sure the two throttle values haven't diverged too far. */
     SAFETY_ASSERT(abs(throttleA - throttleB) < THROTTLE_DISAGREE);
 
     int64_t average = (throttleA + throttleB) / 2;
 
     /* Make sure the average can fit into the new size (int16_t). */
-    SAFETY_ASSERT(average >= INT16_MIN && average <= INT16_MAX);
-    int16_t torque_percentage = static_cast<int16_t>(average);
+    SAFETY_ASSERT(average >= MIN_THROTTLE && average <= MAX_THROTTLE);
 
-    int16_t torque_mapped = map(torque_percentage, MIN_THROTTLE, MAX_THROTTLE, 0, 100);
+    int16_t torque_mapped = map(average, MIN_THROTTLE, MAX_THROTTLE, 0, 100);
     SAFETY_ASSERT(torque_mapped >= 0);
 
     return torque_mapped;
@@ -87,13 +91,13 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
 
     /* Car startup sequence. */
     if (this->car_fully_on) {
-        /* No need to do the motor startup sequence if the motor is already enabled. */
+        /* No need to do the motor startup sequence if the car is already fully started. */
     } else {
         /* Startup sequence needed. In order to start up the motor, we need two things:
          *   1. The brake needs to be down.
          *   2. The start switch needs to be on.
-         * Once these preconditions are met, we can do the startup sequence. 
-         * We will wait two seconds before fully starting up, or abort if
+         * Once these preconditions are met, we can do the startup sequence.
+         * We will also wait two seconds before fully starting up, or abort if
          * one of the preconditions stops holding. */
         if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && this->start_switch_on) {
             if (!this->startup_countdown.started()) {
