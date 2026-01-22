@@ -36,13 +36,13 @@ int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     SAFETY_ASSERT(throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX);
     SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
 
-    int64_t throttleA = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
-    int64_t throttleB = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
+    int64_t throttle1_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
+    int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
 
     /* Make sure the two throttle values haven't diverged too far. */
-    SAFETY_ASSERT(abs(throttleA - throttleB) < THROTTLE_DISAGREE);
+    SAFETY_ASSERT(abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE);
 
-    int64_t average = (throttleA + throttleB) / 2;
+    int64_t average = (throttle1_percent + throttle2_percent) / 2;
 
     /* Make sure the average can fit into the new size (int16_t). */
     SAFETY_ASSERT(average >= MIN_THROTTLE && average <= MAX_THROTTLE);
@@ -67,7 +67,6 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
             break;
         case MessageId::BrakePressure:
             this->brake_pressure = parse_brake_pressure(msg);
-            SAFETY_ASSERT(this->brake_pressure >= BRAKE_PRESSURE_MIN);
             break;
         default:
             break;
@@ -87,6 +86,8 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
 
         /* Brake and throttle cannot be pressed at the same time. */
         SAFETY_ASSERT(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_CONSIDERED_PRESSED));
+
+        this->calculated_torque = mapped_torque;
     }
 
     /* Car startup sequence. */
@@ -156,6 +157,7 @@ std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms) {
         return create_motor_control_command(cmd);
     }
 
+    /* No message was generated, so let the caller know the don't need to keep sending messages. */
     return std::nullopt;
 }
 

@@ -22,7 +22,7 @@ void panic_handler(const char* file, int line, const char* msg) {
 
     /* Loop forever so we never do anything after the panic. */
     while (true) {
-        Serial.printf("Assertion failed! Line %d in file %s with message %s\n", line, file, msg);
+        Serial.printf("Assertion failed! In file %s:%d with message %s\n", file, line, msg);
         pinMode(13, OUTPUT);
         digitalWrite(13, HIGH);
         delay(500);
@@ -73,7 +73,7 @@ void loop() {
 
     /* Used to space out state printing messages. */
     if (!state_print_timer.started()) {
-        state_print_timer.start(current_time_ms, 100/*ms*/);
+        state_print_timer.start(current_time_ms, 500/*ms*/);
     } else if (state_print_timer.triggerReached(current_time_ms)) {
         ECU.printState();
     }
