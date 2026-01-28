@@ -167,12 +167,35 @@ void test_can_dump_parsing() {
     }
 }
 
+void test_inverter_creation_message() {
+    MotorControlCommand cmd;
+    cmd.torque = 0;
+    cmd.speed = 0;
+    cmd.direction = MotorDirection::Forward;
+    cmd.enable_inverter = true;
+    cmd.inverter_discharge = false;
+    cmd.override_speed = false;
+    cmd.torque_limit = 0;
+
+    CAN_message_t created = create_motor_control_command(cmd);
+
+    TEST_ASSERT(created.buf[0] == 0x00);
+    TEST_ASSERT(created.buf[1] == 0x00);
+    TEST_ASSERT(created.buf[2] == 0x00);
+    TEST_ASSERT(created.buf[3] == 0x00);
+    TEST_ASSERT(created.buf[4] == 0x01);
+    TEST_ASSERT(created.buf[5] == 0x01);
+    TEST_ASSERT(created.buf[6] == 0x00);
+    TEST_ASSERT(created.buf[7] == 0x00);
+}
+
 int main(int argc, char **argv) {
     register_panic_handler(panic_handler);
 
     UNITY_BEGIN();
     RUN_TEST(test_start_switch);
     RUN_TEST(test_can_dump_parsing);
+    RUN_TEST(test_inverter_creation_message);
     // RUN_TEST(test_safety_violation);
     UNITY_END();
 }

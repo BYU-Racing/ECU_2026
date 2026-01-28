@@ -3,11 +3,13 @@
 #include <cstring>
 
 #include "assert.hpp"
+#include "CAN_message_t.hpp"
 
 /* We do a lot of bit mucking below, so we'll use these quite a bit. */
 #define BIT_READ(value, bit) ((bool)(((value) >> (bit)) & 0x01))
 #define BIT_SET_TO(value, bit, set_to) if (set_to) { (value) |= (1UL << (bit)); }
 
+/* Guaranteed to generate a message filled with zeroes. */
 CAN_message_t empty_can_message(MessageId id, uint8_t len) {
     CAN_message_t result = {0};
     /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises. */
@@ -111,7 +113,7 @@ uint16_t parse_brake_pressure(CAN_message_t msg) {
     return read_u16_le(msg.buf);
 }
 
-CAN_message_t create_throttle_brake_pressure(uint16_t value) {
+CAN_message_t create_brake_pressure(uint16_t value) {
     CAN_message_t new_message = empty_can_message(MessageId::BrakePressure, 2);
     write_u16_le(new_message.buf, value);
     return new_message;
