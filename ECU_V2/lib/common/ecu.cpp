@@ -31,6 +31,31 @@ int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t ne
     return output_shifted;
 }
 
+int16_t Ecu::smooth_torque(uint16_t torque) {
+    /* smooth out throttle values by averaging out previous four values */
+    /* If recieves a value of 0 return 0 and set all values to 0 ;) */
+    if (torque == 0) {
+        this->torque_memory[0] = 0;
+        this->torque_memory[1] = 0;
+        this->torque_memory[2] = 0;
+        this->torque_memory[3] = 0;
+        return 0;
+    }
+
+    uint16_t total_torque;
+    this->torque_memory[3] = this->torque_memory[2];
+    this->torque_memory[2] = this->torque_memory[1];
+    this->torque_memory[1] = this->torque_memory[0];
+    this->torque_memory[0] = torque;
+
+    for (int i : this->torque_memory) {
+        total_torque += i;
+    }
+
+    /* return averaged out throttle value for smoother drive experience */
+    return total_torque / 4;
+}
+
 int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     /* Make sure the throttle values are in range. */
     SAFETY_ASSERT(throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX);
@@ -49,6 +74,9 @@ int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
 
     int16_t torque_mapped = map(average, MIN_THROTTLE, MAX_THROTTLE, 0, 100);
     SAFETY_ASSERT(torque_mapped >= 0);
+
+    /* call smooth torque function */
+    this->torque_mapped = Ecu::smooth_torque(this->torque_mapped);
 
     return torque_mapped;
 }

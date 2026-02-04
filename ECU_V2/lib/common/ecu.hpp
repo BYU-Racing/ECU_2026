@@ -16,6 +16,9 @@ public:
      * along the CAN bus. */
     std::optional<CAN_message_t> emitMessage(uint32_t current_time_ms);
 
+    /* smooth torque */
+    int16_t smooth_torque(uint16_t torque);
+
     /* Uses PRINTF for all printing. */
     void printState();
 
@@ -53,4 +56,8 @@ private:
 
     /* Time since we last sent a motor control command. */
     Trigger motor_control_message_pacing;
+
+    /* throttle mapping memory */
+    uint16_t torque_memory[4] = {0, 0, 0, 0};
+
 };
