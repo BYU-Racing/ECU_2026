@@ -6,6 +6,9 @@
 #include "can_serde.hpp"
 #include "constants.hpp"
 
+/* ECU class declared to access smooth_torque function in throttle_map*/
+Ecu ecu;
+
 int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t new_min_32, int32_t new_max_32) {
     if (old_min_32 == old_max_32 || new_min_32 == new_max_32) {
         /* Avoid division by zero. */
@@ -40,20 +43,22 @@ int16_t Ecu::smooth_torque(uint16_t torque) {
         this->torque_memory[2] = 0;
         this->torque_memory[3] = 0;
         return 0;
+    } else {
+        uint16_t total_torque;
+        /* cycle through last 4 torque values*/
+        this->torque_memory[3] = this->torque_memory[2];
+        this->torque_memory[2] = this->torque_memory[1];
+        this->torque_memory[1] = this->torque_memory[0];
+        this->torque_memory[0] = torque;
+
+        /* sum last 4 torque values */
+        for (int i = 0; i < 4; i++) {
+            total_torque += this->torque_memory[i];
+        }
+
+        /* return averaged out throttle value for smoother throttle experience */
+        return total_torque / 4;
     }
-
-    uint16_t total_torque;
-    this->torque_memory[3] = this->torque_memory[2];
-    this->torque_memory[2] = this->torque_memory[1];
-    this->torque_memory[1] = this->torque_memory[0];
-    this->torque_memory[0] = torque;
-
-    for (int i : this->torque_memory) {
-        total_torque += i;
-    }
-
-    /* return averaged out throttle value for smoother drive experience */
-    return total_torque / 4;
 }
 
 int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
@@ -76,7 +81,7 @@ int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     SAFETY_ASSERT(torque_mapped >= 0);
 
     /* call smooth torque function */
-    this->torque_mapped = Ecu::smooth_torque(this->torque_mapped);
+    torque_mapped = ecu.smooth_torque(torque_mapped);
 
     return torque_mapped;
 }
