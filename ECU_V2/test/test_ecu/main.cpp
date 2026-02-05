@@ -16,7 +16,7 @@ void tearDown(void) {}
 /* Needs to be volatile since the unity test framework uses `longjmp`. */
 volatile bool expecting_safety_violation = false;
 volatile bool hit_safety_violation = false;
-void panic_handler(const char *file, int line, const char *msg) {
+void safety_assert_failed_handler(AssertLevel level, const char *file, int line, const char *msg) {
     if (expecting_safety_violation) {
         hit_safety_violation = true;
     } else {
@@ -115,7 +115,7 @@ void test_ecu() {
 }
 
 int main(int argc, char **argv) {
-    register_panic_handler(panic_handler);
+    register_assert_failed_handler(safety_assert_failed_handler);
 
     UNITY_BEGIN();
     RUN_TEST(test_ecu);
