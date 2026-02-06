@@ -11,7 +11,7 @@
 
 /* Guaranteed to generate a message filled with zeroes. */
 CAN_message_t empty_can_message(MessageId id, uint8_t len) {
-    CAN_message_t result = {0};
+    CAN_message_t result = {};
     /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises. */
     result.id = static_cast<uint32_t>(id);
     result.len = len;

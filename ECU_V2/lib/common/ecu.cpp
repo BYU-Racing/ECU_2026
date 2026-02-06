@@ -44,7 +44,7 @@ int16_t Ecu::smooth_torque(uint16_t torque) {
         this->torque_memory[3] = 0;
         return 0;
     } else {
-        uint16_t total_torque;
+        uint16_t total_torque = 0;
         /* cycle through last 4 torque values*/
         this->torque_memory[3] = this->torque_memory[2];
         this->torque_memory[2] = this->torque_memory[1];

@@ -24,4 +24,6 @@ private:
 #define PRINTF(...) Serial.printf(__VA_ARGS__)
 #endif
 
+#define UNUSED(x) ((void)x)
+
 uint32_t str_hash(const char *str);

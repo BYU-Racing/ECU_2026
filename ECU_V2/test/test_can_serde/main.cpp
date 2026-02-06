@@ -8,6 +8,7 @@
 
 #include "assert.hpp"
 #include "can_serde.hpp"
+#include "util.hpp"
 
 void setUp(void) {
     // set stuff up here
@@ -17,11 +18,13 @@ void tearDown(void) {
     // clean stuff up here
 }
 
-void safety_assert_failed_handler(AssertLevel level, const char *file, int line, AssertCode error_code) {
+void assert_failed_handler(AssertLevel level, const char *file, int line, AssertCode error_code) {
+    UNUSED(level);
+
     /* If an SAFETY_ASSERT fails somewhere in the code, this will let the testing environment
      * know that we failed the test. */
     std::stringstream fail_msg;
-    fail_msg << "Assert failed at " << file << ":" << line;
+    fail_msg << "Assert failed at " << file << ":" << line << " with code " << static_cast<uint8_t>(error_code);
     TEST_FAIL_MESSAGE(fail_msg.str().c_str());
 }
 
@@ -64,7 +67,7 @@ void test_can_dump_parsing() {
         iss >> msg_num >> time_offset >> type >> id_hex >> direction >> len;
 
         /* Construct the message that we'll be using. */
-        CAN_message_t msg = {0};
+        CAN_message_t msg = {};
         msg.id = std::stoul(id_hex, nullptr, 16); /* Hex -> number. */
         msg.len = len;
 
@@ -189,8 +192,8 @@ void test_inverter_creation_message() {
     TEST_ASSERT(created.buf[7] == 0x00);
 }
 
-int main(int argc, char **argv) {
-    register_assert_failed_handler(safety_assert_failed_handler);
+int main() {
+    register_assert_failed_handler(assert_failed_handler);
 
     UNITY_BEGIN();
     RUN_TEST(test_start_switch);

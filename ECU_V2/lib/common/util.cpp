@@ -38,7 +38,7 @@ uint32_t str_hash(const char *str) {
     uint32_t hash = 5381;
     uint32_t c;
 
-    while (c = *str++)
+    while ((c = *str++))
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
 
     return hash;

@@ -15,12 +15,12 @@ void setUp(void) {}
 
 void tearDown(void) {}
 
-int main(int argc, char **argv) {
+int main() {
     std::vector<fs::path> target_dirs = {"lib", "src"};
     std::stringstream csv_entries;
 
     for (const auto& target_dir : target_dirs) {
-        for (const auto& dir_entry : fs::recursive_directory_iterator("lib")) {
+        for (const auto& dir_entry : fs::recursive_directory_iterator(target_dir)) {
             if (!fs::is_regular_file(dir_entry)) continue;
 
             auto path = dir_entry.path();

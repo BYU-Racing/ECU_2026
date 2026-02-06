@@ -23,7 +23,7 @@ void safety_assert_failed_handler(AssertLevel level, const char *file, int line,
         /* If an SAFETY_ASSERT fails somewhere in the code, this will let the testing environment
         * know that we failed the test. */
         std::stringstream fail_msg;
-        fail_msg << "Assert failed at " << file << ":" << line;
+        fail_msg << "Assert failed at " << file << ":" << line << " with code " << static_cast<uint8_t>(error_code);
         TEST_FAIL_MESSAGE(fail_msg.str().c_str());
     }
 }
@@ -114,7 +114,7 @@ void test_ecu() {
     TEST_ASSERT(ecu.emitMessage(current_time_ms) == std::nullopt);
 }
 
-int main(int argc, char **argv) {
+int main(int _argc, char **_argv) {
     register_assert_failed_handler(safety_assert_failed_handler);
 
     UNITY_BEGIN();
