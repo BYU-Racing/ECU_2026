@@ -63,7 +63,7 @@ int16_t Ecu::smooth_torque(uint16_t torque) {
 
 int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     /* Make sure the throttle values are in range. */
-    SAFETY_ASSERT(throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX);
+    SAFETY_ASSERT(throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX, AssertCode::ThrottleOutOfRange);
     // SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
 
     int64_t throttle1_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
@@ -72,15 +72,15 @@ int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     // int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
 
     /* Make sure the two throttle values haven't diverged too far. */
-    SAFETY_ASSERT(abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE);
+    SAFETY_ASSERT(abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE, AssertCode::ThrottleDisagreement);
 
     int64_t average = (throttle1_percent + throttle2_percent) / 2;
 
     /* Make sure the average can fit into the new size (int16_t). */
-    SAFETY_ASSERT(average >= MIN_THROTTLE && average <= MAX_THROTTLE);
+    SAFETY_ASSERT(average >= MIN_THROTTLE && average <= MAX_THROTTLE, AssertCode::ThrottleOutOfRange);
 
     int16_t torque_mapped = map(average, MIN_THROTTLE, MAX_THROTTLE, 0, 100);
-    SAFETY_ASSERT(torque_mapped >= 0);
+    SAFETY_ASSERT(torque_mapped >= 0, AssertCode::ThrottleOutOfRange);
 
     /* call smooth torque function */
     torque_mapped = ecu.smooth_torque(torque_mapped);
@@ -120,7 +120,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
         }
 
         /* Brake and throttle cannot be pressed at the same time. */
-        SAFETY_ASSERT(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_CONSIDERED_PRESSED));
+        SAFETY_ASSERT(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_CONSIDERED_PRESSED), AssertCode::ThrottleAndBrakePressed);
 
         this->calculated_torque = mapped_torque;
     }
