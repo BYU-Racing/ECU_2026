@@ -27,9 +27,16 @@
  *    be reset.
  *  */
 
+
+/* Error codes for safety asserts */
 enum class AssertCode: uint8_t {
     Unknown = 0,
-    ThrottleOutOfRange = 1,
+    BrakeAndThrottle = 1,
+    ThrottleOutOfRange = 2,
+    ThrottleDisagree = 3,
+    TorqueLessThanZero = 4,
+    SmoothTorqueLessThanZero = 5,
+    ThrottleOverflow = 6,
 };
 
 enum class AssertLevel {
