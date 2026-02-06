@@ -3,6 +3,7 @@
  */
 #pragma once
 
+#include "assert.hpp"
 #include "CAN_message_t.hpp"
 
 /* All the CAN messages with their associated IDs. */

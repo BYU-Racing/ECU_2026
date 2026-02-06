@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 /* Assertion and panic handling code. This allows any part of the code to use assertions.
  * What's an assertion? Let's look at an example.
  * Say there's a temperature sensor that should never exceed 90°C.
