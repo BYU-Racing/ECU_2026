@@ -30,3 +30,16 @@ bool Trigger::triggerReached(uint32_t current_time_ms) {
 void Trigger::cancel() {
     started_at = std::nullopt;
 }
+
+/* Used to condense the file name into something short enough we can send
+ * along the CAN bus in the case of a fault. */
+uint32_t str_hash(const char *str) {
+    /* djb2 hash. */
+    uint32_t hash = 5381;
+    uint32_t c;
+
+    while (c = *str++)
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}

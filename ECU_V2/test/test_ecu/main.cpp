@@ -16,7 +16,7 @@ void tearDown(void) {}
 /* Needs to be volatile since the unity test framework uses `longjmp`. */
 volatile bool expecting_safety_violation = false;
 volatile bool hit_safety_violation = false;
-void safety_assert_failed_handler(AssertLevel level, const char *file, int line, const char *msg) {
+void safety_assert_failed_handler(AssertLevel level, const char *file, int line, AssertCode error_code) {
     if (expecting_safety_violation) {
         hit_safety_violation = true;
     } else {

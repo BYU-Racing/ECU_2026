@@ -14,6 +14,8 @@ using namespace std;
 
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> MotorCAN;
 
+Ecu ECU = {};
+
 /* We only use soft resets in debug builds. In production builds they're treated as
  * safety failures. */
 #ifdef ENABLE_DEBUGGING
@@ -23,7 +25,7 @@ Trigger SOFT_RESET_TRIGGER = {};
 jmp_buf soft_assert_failed_goto_start_of_loop;
 #endif
 
-void safety_assert_failed_handler(const char* file, int line, const char* msg) {
+void safety_assert_failed_handler(const char* file, int line, AssertCode error_code) {
     /* Shut everything down. */
     CAN_message_t shutdown_message = empty_can_message(MessageId::ControlCommand, 8);
     /* `empty_can_message` is guaranteed to generate a message full of zeroes,
@@ -33,7 +35,15 @@ void safety_assert_failed_handler(const char* file, int line, const char* msg) {
 
     /* Loop forever so we never do anything after the panic. */
     while (true) {
-        Serial.printf("Safety assertion failed! In file %s:%d with message %s\n", file, line, msg);
+        Serial.printf("Safety assertion failed! In file %s:%d with error code %s\n", file, line, error_code);
+
+        CriticalFault fault_msg;
+        fault_msg.error_code = error_code;
+        fault_msg.assert_failure_line = line;
+        fault_msg.file_name_hash = str_hash(file);
+
+        MotorCAN.write(create_critical_fault_command(fault_msg));
+
         pinMode(13, OUTPUT);
         digitalWrite(13, HIGH);
         delay(500);
@@ -43,36 +53,34 @@ void safety_assert_failed_handler(const char* file, int line, const char* msg) {
 }
 
 #ifdef ENABLE_DEBUGGING
-void soft_assert_failed_handler(const char* file, int line, const char* msg) {
+void soft_assert_failed_handler(const char* file, int line, AssertCode error_code) {
     /* Be sure to let us know if a soft assert failed. */
-    Serial.printf("Soft assertion failed! In file %s:%d with message %s\n", file, line, msg);
+    Serial.printf("Soft assertion failed! In file %s:%d with error code %s\n", file, line, error_code);
     /* Start the reset trigger. */
     SOFT_RESET_TRIGGER.start(millis(), SOFT_RESET_LENGTH_MS);
     longjmp(soft_assert_failed_goto_start_of_loop, 0);
 }
 #endif
 
-void assert_failed_handler(AssertLevel level, const char* file, int line, const char* msg) {
+void assert_failed_handler(AssertLevel level, const char* file, int line, AssertCode error_code) {
 #ifdef ENABLE_DEBUGGING
     switch (level) {
         case AssertLevel::Safety:
-            safety_assert_failed_handler(file, line, msg);
+            safety_assert_failed_handler(file, line, error_code);
             break;
         case AssertLevel::Soft:
-            soft_assert_failed_handler(file, line, msg);
+            soft_assert_failed_handler(file, line, error_code);
             break;
     }
 #else
     switch (level) {
         case AssertLevel::Safety:
         case AssertLevel::Soft:
-            safety_assert_failed_handler(file, line, msg);
+            safety_assert_failed_handler(file, line, error_code);
             break;
     }
 #endif
 }
-
-Ecu ECU = {};
 
 void setup() {
   // First things first, register the panic handler. If something goes

@@ -8,8 +8,8 @@ void register_assert_failed_handler(assert_failed_handler_t handler) {
     current_handler = handler;
 }
 
-void assert_failed(AssertLevel level, const char* file, int line, const char* msg) {
+void assert_failed(AssertLevel level, const char* file, int line, AssertCode error_code) {
     if (current_handler != nullptr) {
-        current_handler(level, file, line, msg);
+        current_handler(level, file, line, error_code);
     }
 }

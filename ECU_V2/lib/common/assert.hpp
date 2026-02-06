@@ -25,26 +25,34 @@
  *    be reset.
  *  */
 
+enum class AssertCode: uint8_t {
+    Unknown = 0,
+    ThrottleOutOfRange = 1,
+};
+
 enum class AssertLevel {
     Soft,
     Safety,
 };
 
 /* This is the function type for the panic handler. */
-typedef void (*assert_failed_handler_t)(AssertLevel level, const char* file, int line, const char* msg);
+typedef void (*assert_failed_handler_t)(AssertLevel level, const char* file, int line, AssertCode error_code);
 
 /* Call this to set what the code should do if an assertion fails. */
 void register_assert_failed_handler(assert_failed_handler_t handler);
 
 /* Calls the registered assert failure handler. */
-void assert_failed(AssertLevel level, const char* file, int line, const char* msg);
+void assert_failed(AssertLevel level, const char* file, int line, AssertCode error_code);
 
-#define GENERIC_ASSERT(level, condition, message) \
+#define GENERIC_ASSERT(level, condition, code) \
     do { \
         if (!(condition)) { \
-            assert_failed((level), __FILE__, __LINE__, (message)); \
+            assert_failed((level), __FILE__, __LINE__, (code)); \
         } \
     } while (0)
 
-#define SOFT_ASSERT(condition)   GENERIC_ASSERT(AssertLevel::Soft, (condition), "")
-#define SAFETY_ASSERT(condition) GENERIC_ASSERT(AssertLevel::Safety, (condition), "")
+#define SOFT_ASSERT(condition)   GENERIC_ASSERT(AssertLevel::Soft, (condition), AssertCode::Unknown)
+#define SAFETY_ASSERT(condition) GENERIC_ASSERT(AssertLevel::Safety, (condition), AssertCode::Unknown)
+
+#define SOFT_ASSERT_CODE(condition, code)   GENERIC_ASSERT(AssertLevel::Soft, (condition), (code))
+#define SAFETY_ASSERT_CODE(condition, code) GENERIC_ASSERT(AssertLevel::Safety, (condition), (code))

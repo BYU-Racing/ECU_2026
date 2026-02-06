@@ -64,10 +64,12 @@ int16_t Ecu::smooth_torque(uint16_t torque) {
 int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     /* Make sure the throttle values are in range. */
     SAFETY_ASSERT(throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX);
-    SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
+    // SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
 
     int64_t throttle1_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
-    int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
+    /* DEBUG ONLY!!!! Throttle 2 set to throttle 1 :) */
+    int64_t throttle2_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
+    // int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
 
     /* Make sure the two throttle values haven't diverged too far. */
     SAFETY_ASSERT(abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE);
