@@ -17,6 +17,8 @@ void tearDown(void) {}
 volatile bool expecting_safety_violation = false;
 volatile bool hit_safety_violation = false;
 void safety_assert_failed_handler(AssertLevel level, const char *file, int line, AssertCode error_code) {
+    UNUSED(level);
+
     if (expecting_safety_violation) {
         hit_safety_violation = true;
     } else {
@@ -114,7 +116,7 @@ void test_ecu() {
     TEST_ASSERT(ecu.emitMessage(current_time_ms) == std::nullopt);
 }
 
-int main(int _argc, char **_argv) {
+int main() {
     register_assert_failed_handler(safety_assert_failed_handler);
 
     UNITY_BEGIN();
