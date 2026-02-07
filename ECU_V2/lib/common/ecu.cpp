@@ -67,8 +67,8 @@ int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     // SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
 
     int64_t throttle1_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
-    /* DEBUG ONLY!!!! Throttle 2 set to throttle 1 :) */
-    int64_t throttle2_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
+    /* FIXME Throttle 2 set to throttle 1 :) */
+    int64_t throttle2_percent = throttle1_percent;
     // int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
 
     /* Make sure the two throttle values haven't diverged too far. */
@@ -143,10 +143,15 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
         if (!this->turn_off_timeout.started()) {
             /* If we haven't started the timer yet, go ahead and start it. */
             this->turn_off_timeout.start(current_time_ms, 1000);
+            /* Keep the last value while we wait. */
+            debounced_switch = true;
         } else if (this->turn_off_timeout.triggerReached(current_time_ms)) {
             /* It's been long enough to consider it off. */
             debounced_switch = false;
             this->last_start_switch_value = false;
+        } else {
+            /* Timer is running but hasn't reached yet - keep the old value. */
+            debounced_switch = true;
         }
     }
 
@@ -225,6 +230,7 @@ void Ecu::printState() {
     PRINTF("=== ECU State ===\n");
     PRINTF("car_fully_on: %s\n", this->car_fully_on ? "true" : "false");
     PRINTF("start_switch_on: %s\n", this->start_switch_on ? "true" : "false");
+    PRINTF("last_start_switch_value: %s\n", this->last_start_switch_value ? "true" : "false");
     PRINTF("brake_pressure: %u\n", this->brake_pressure);
     PRINTF("calculated_torque: %d\n", this->calculated_torque);
 
