@@ -125,6 +125,31 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
         this->calculated_torque = mapped_torque;
     }
 
+    bool debounced_switch;
+
+    /* FIXME hack working around the non-debounced switch. */
+    if (this->last_start_switch_value == this->start_switch_on) {
+        /* Nothing to do, as the last value is the same as the current value. */
+        debounced_switch = this->start_switch_on;
+        this->turn_off_timeout.cancel();
+    } else if (this->start_switch_on) {
+        debounced_switch = true;
+        this->last_start_switch_value = true;
+        this->turn_off_timeout.cancel();
+    } else {
+        /* The switch was turned off, but we need to wait a second before
+         * considering it switched off. */
+
+        if (!this->turn_off_timeout.started()) {
+            /* If we haven't started the timer yet, go ahead and start it. */
+            this->turn_off_timeout.start(current_time_ms, 1000);
+        } else if (this->turn_off_timeout.triggerReached(current_time_ms)) {
+            /* It's been long enough to consider it off. */
+            debounced_switch = false;
+            this->last_start_switch_value = false;
+        }
+    }
+
     /* Car startup sequence. */
     if (this->car_fully_on) {
         /* No need to do the motor startup sequence if the car is already fully started. */
@@ -135,7 +160,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
          * Once these preconditions are met, we can do the startup sequence.
          * We will also wait two seconds before fully starting up, or abort if
          * one of the preconditions stops holding. */
-        if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && this->start_switch_on) {
+        if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && debounced_switch) {
             if (!this->startup_countdown.started()) {
                 this->startup_countdown.start(current_time_ms, STARTUP_DELAY_MS);
             } else if (this->startup_countdown.triggerReached(current_time_ms)) {
@@ -148,7 +173,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
         }
     }
 
-    if (!this->start_switch_on) {
+    if (!debounced_switch) {
         /* Pretty self-explanatory: if the start switch turns off, the car turns off. */
         this->car_fully_on = false;
     }
