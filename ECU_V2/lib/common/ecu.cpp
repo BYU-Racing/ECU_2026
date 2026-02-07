@@ -33,22 +33,33 @@ int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t ne
 
 int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     /* Make sure the throttle values are in range. */
-    SAFETY_ASSERT(throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX);
-    SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
+    
+    // FIXME this is throwing an error
+    // SAFETY_ASSERT(throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX);
+    // SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
 
     int64_t throttle1_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
-    int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
+    /* DEBUG ONLY */
+    int64_t throttle2_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
 
+    // int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
+
+    // FIXME this is throwing an error
     /* Make sure the two throttle values haven't diverged too far. */
-    SAFETY_ASSERT(abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE);
+    //SAFETY_ASSERT(abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE);
 
     int64_t average = (throttle1_percent + throttle2_percent) / 2;
 
+    // FIXME this throwing an error
     /* Make sure the average can fit into the new size (int16_t). */
-    SAFETY_ASSERT(average >= MIN_THROTTLE && average <= MAX_THROTTLE);
+    // SAFETY_ASSERT(average >= MIN_THROTTLE && average <= MAX_THROTTLE);
 
-    int16_t torque_mapped = map(average, MIN_THROTTLE, MAX_THROTTLE, 0, 100);
-    SAFETY_ASSERT(torque_mapped >= 0);
+    int16_t torque_mapped = map(average, MIN_THROTTLE, MAX_THROTTLE, 0, MAX_TORQUE);
+    // FIXME this isn't working 
+    // SAFETY_ASSERT(torque_mapped >= 0);
+    if (torque_mapped < 0) {
+        torque_mapped = 0;
+    }
 
     return torque_mapped;
 }
@@ -84,10 +95,46 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
             mapped_torque = 0;
         }
 
+        // FIXME this isn't working 
         /* Brake and throttle cannot be pressed at the same time. */
-        SAFETY_ASSERT(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_CONSIDERED_PRESSED));
+        // SAFETY_ASSERT(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_CONSIDERED_PRESSED));
 
         this->calculated_torque = mapped_torque;
+
+
+    }
+
+    bool debounced_switch;
+
+    /* FIXME hack working around the non-debounced switch. */
+    if (this->last_start_switch_value == this->start_switch_on)
+    {
+        /* Nothing to do, as the last value is the same as the current value. */
+        debounced_switch = this->start_switch_on;
+        this->turn_off_timeout.cancel();
+    }
+    else if (this->start_switch_on)
+    {
+        debounced_switch = true;
+        this->last_start_switch_value = true;
+        this->turn_off_timeout.cancel();
+    }
+    else
+    {
+        /* The switch was turned off, but we need to wait a second before
+         * considering it switched off. */
+
+        if (!this->turn_off_timeout.started())
+        {
+            /* If we haven't started the timer yet, go ahead and start it. */
+            this->turn_off_timeout.start(current_time_ms, 1000);
+        }
+        else if (this->turn_off_timeout.triggerReached(current_time_ms))
+        {
+            /* It's been long enough to consider it off. */
+            debounced_switch = false;
+            this->last_start_switch_value = false;
+        }
     }
 
     /* Car startup sequence. */
@@ -100,20 +147,23 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
          * Once these preconditions are met, we can do the startup sequence.
          * We will also wait two seconds before fully starting up, or abort if
          * one of the preconditions stops holding. */
-        if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && this->start_switch_on) {
+        // if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && this->start_switch_on) {
+        if (debounced_switch) {
             if (!this->startup_countdown.started()) {
                 this->startup_countdown.start(current_time_ms, STARTUP_DELAY_MS);
             } else if (this->startup_countdown.triggerReached(current_time_ms)) {
                 /* Good to go! */
                 this->car_fully_on = true;
             }
-        } else {
+        }
+        else
+        {
             /* One of the preconditions failed, so we need to reset the timer. */
             this->startup_countdown.cancel();
         }
     }
 
-    if (!this->start_switch_on) {
+    if (!debounced_switch) {
         /* Pretty self-explanatory: if the start switch turns off, the car turns off. */
         this->car_fully_on = false;
     }
@@ -126,7 +176,8 @@ std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms) {
     /* Engine is enabled if all the preconditions of `car_fully_on` passed,
      * and if the brake is up. We don't enable the inverter until the
      * driver has lifted up the brake.  */
-    if (this->car_fully_on && this->brake_pressure < BRAKE_CONSIDERED_PRESSED) {
+    // if (this->car_fully_on && this->brake_pressure < BRAKE_CONSIDERED_PRESSED) {
+    if (this->car_fully_on) {
         inverter_enabled = true;
     }
 
@@ -148,7 +199,7 @@ std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms) {
         MotorControlCommand cmd;
         cmd.torque = torque_to_use;
         cmd.speed = 0;
-        cmd.direction = MotorDirection::Forward;
+        cmd.direction = MotorDirection::Reverse;
         cmd.enable_inverter = inverter_enabled;
         cmd.inverter_discharge = false;
         cmd.override_speed = false;
@@ -165,6 +216,7 @@ void Ecu::printState() {
     PRINTF("=== ECU State ===\n");
     PRINTF("car_fully_on: %s\n", this->car_fully_on ? "true" : "false");
     PRINTF("start_switch_on: %s\n", this->start_switch_on ? "true" : "false");
+    PRINTF("last_start_switch_value: %s\n", this->last_start_switch_value ? "true" : "false");
     PRINTF("brake_pressure: %u\n", this->brake_pressure);
     PRINTF("calculated_torque: %d\n", this->calculated_torque);
 

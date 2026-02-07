@@ -54,6 +54,7 @@ void loop() {
     /* The ECU does not keep track of what time it is, nor does it use `millis`,
      * so we always have to tell it what time it is. */
     uint32_t current_time_ms = millis();
+    /* FIXME a bug */
 
     /* Receive a message and have the ECU process it. */
     CAN_message_t rmsg;
