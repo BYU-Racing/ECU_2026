@@ -36,33 +36,45 @@ int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t ne
 
 int16_t Ecu::smooth_torque(uint16_t torque) {
     /* smooth out throttle values by averaging out previous four values */
+
     /* If recieves a value of 0 return 0 and set all values to 0 ;) */
     if (torque == 0) {
-        this->torque_memory[0] = 0;
-        this->torque_memory[1] = 0;
-        this->torque_memory[2] = 0;
-        this->torque_memory[3] = 0;
-        return 0;
-    } else {
-        uint16_t total_torque = 0;
-        /* cycle through last 4 torque values*/
-        this->torque_memory[3] = this->torque_memory[2];
-        this->torque_memory[2] = this->torque_memory[1];
-        this->torque_memory[1] = this->torque_memory[0];
-        this->torque_memory[0] = torque;
-
-        /* sum last 4 torque values */
-        for (int i = 0; i < 4; i++) {
-            total_torque += this->torque_memory[i];
+        for (int i = 0; i < 4; i++)
+        {
+            this->torque_memory[i] = 0;
         }
-
-        /* average out torque and check for errors */
-        total_torque = total_torque / 4;
-        SAFETY_ASSERT_CODE((total_torque >= 0), AssertCode::SmoothTorqueLessThanZero);
-
-        return total_torque;
+        this->last_output_torque = 0;
+        return 0;
     }
+
+    /* Continues to send same torque message until 20ms has passed */
+    uint16_t now_ms = millis();
+    if ((uint16_t)(now_ms - last_smooth_update_ms) < SMOOTH_PERIOD_MS)
+    {
+        return this->last_output_torque;
+    }
+    /* Starts timer for next cycle when 20ms has passed */
+    this->last_smooth_update_ms = now_ms;
+
+    uint16_t total_torque = 0;
+    /* cycle through last 4 torque values*/
+    this->torque_memory[3] = this->torque_memory[2];
+    this->torque_memory[2] = this->torque_memory[1];
+    this->torque_memory[1] = this->torque_memory[0];
+    this->torque_memory[0] = torque;
+
+    /* sum last 4 torque values */
+    for (int i = 0; i < 4; i++) {
+        total_torque += this->torque_memory[i];
+    }
+
+    /* average out torque and check for errors */
+    total_torque = total_torque / 4;
+    SAFETY_ASSERT_CODE((total_torque >= 0), AssertCode::SmoothTorqueLessThanZero);
+    this->last_output_torque = total_torque;
+    return total_torque;
 }
+
 
 int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     /* Make sure the throttle values are in range. */
