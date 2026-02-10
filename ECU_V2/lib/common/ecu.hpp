@@ -44,6 +44,10 @@ private:
     /* Whether the car is switched on or not. */
     bool start_switch_on = false;
 
+    /* FIXME this is a hack to work around the start switch sensor. */
+    bool last_start_switch_value = false;
+    Trigger turn_off_timeout;
+
     /* How far the brake is pressed down. */
     uint16_t brake_pressure = BRAKE_PRESSURE_MIN;
 

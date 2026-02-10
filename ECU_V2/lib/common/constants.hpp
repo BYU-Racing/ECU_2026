@@ -9,11 +9,11 @@ constexpr uint32_t SOFT_RESET_LENGTH_MS = 2000;
 constexpr long SERIAL_BAUD_RATE = 115200;
 constexpr uint32_t CAN_BAUD_RATE = 250000;
 
-constexpr int16_t THROTTLE1_MIN = 0;
-constexpr int16_t THROTTLE1_MAX = 160;
+constexpr int16_t THROTTLE1_MIN = 720;
+constexpr int16_t THROTTLE1_MAX = 995;
 
-constexpr int16_t THROTTLE2_MIN = 0;
-constexpr int16_t THROTTLE2_MAX = 70;
+constexpr int16_t THROTTLE2_MIN = 165;
+constexpr int16_t THROTTLE2_MAX = 180;
 
 /* Maximum allowed difference between the two throttles' values,
  * after those values have been mapped to [THROTTLE[X]_MIN, THROTTLE[X]_MAX]. */
@@ -33,8 +33,9 @@ constexpr int16_t BRAKE_CONSIDERED_PRESSED = 20;
 
 
 constexpr uint32_t STARTUP_DELAY_MS = 2000;  /* 2 seconds */
-
+`
 constexpr int16_t TORQUE_FLOOR = 10;
+<<<<<<< HEAD
 
 /* MAX TORQUE */
 /* N * 0.1 */
@@ -42,3 +43,8 @@ constexpr int16_t MAX_TORQUE = 500;
  
 /* Drive Modes */
 constexpr int8_t DRIVE_MODE = 0;
+=======
+/* MAX TORQUE VALUE */
+// 50 Nm 
+constexpr int16_t MAX_TORQUE = 500;
+>>>>>>> february_test
