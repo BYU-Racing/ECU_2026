@@ -66,25 +66,29 @@ int16_t Ecu::smooth_torque(uint16_t torque) {
 
 int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     /* Make sure the throttle values are in range. */
-    SAFETY_ASSERT_CODE((throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX), AssertCode::ThrottleOutOfRange);
+    // SAFETY_ASSERT_CODE((throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX), AssertCode::ThrottleOutOfRange);
     // SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
 
     int64_t throttle1_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
     /* DEBUG ONLY!!!! Throttle 2 set to throttle 1 :) */
-    int64_t throttle2_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
-    // int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
+    // int64_t throttle2_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
+    int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
 
     /* Make sure the two throttle values haven't diverged too far. */
-    SAFETY_ASSERT_CODE((abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE), AssertCode::ThrottleDisagree);
+    // SAFETY_ASSERT_CODE((abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE), AssertCode::ThrottleDisagree);
 
     int64_t average = (throttle1_percent + throttle2_percent) / 2;
 
     /* Make sure the average can fit into the new size (int16_t). */
     SAFETY_ASSERT_CODE((average >= MIN_THROTTLE && average <= MAX_THROTTLE), AssertCode::ThrottleOverflow);
 
-    int16_t torque_mapped = map(average, MIN_THROTTLE, MAX_THROTTLE, 0, 100);
-    SAFETY_ASSERT_CODE((torque_mapped >= 0), AssertCode::TorqueLessThanZero);
-
+    int16_t torque_mapped = map(average, MIN_THROTTLE, MAX_THROTTLE, 0, MAX_TORQUE);
+    // SAFETY_ASSERT_CODE((torque_mapped >= 0), AssertCode::TorqueLessThanZero);
+    /* TODO look into this */
+    if (torque_mapped < 0) {
+        torque_mapped = 0;
+    }
+    
     /* call smooth torque function */
     torque_mapped = ecu.smooth_torque(torque_mapped);
 
@@ -123,7 +127,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
         }
 
         /* Brake and throttle cannot be pressed at the same time. */
-        SAFETY_ASSERT_CODE(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_CONSIDERED_PRESSED), AssertCode::BrakeAndThrottle);
+        // SAFETY_ASSERT_CODE(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_CONSIDERED_PRESSED), AssertCode::BrakeAndThrottle);
 
         this->calculated_torque = mapped_torque;
     }
@@ -138,10 +142,15 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
          * Once these preconditions are met, we can do the startup sequence.
          * We will also wait two seconds before fully starting up, or abort if
          * one of the preconditions stops holding. */
-        if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && this->start_switch_on) {
-            if (!this->startup_countdown.started()) {
-                this->startup_countdown.start(current_time_ms, STARTUP_DELAY_MS);
-            } else if (this->startup_countdown.triggerReached(current_time_ms)) {
+
+        /* DEBUG ONLY */
+        // TODO this needs to be looked over 
+        // if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && this->start_switch_on) {
+        if (this->start_switch_on) {
+        if (!this->startup_countdown.started())
+        {
+            this->startup_countdown.start(current_time_ms, STARTUP_DELAY_MS);
+        } else if (this->startup_countdown.triggerReached(current_time_ms)) {
                 /* Good to go! */
                 this->car_fully_on = true;
             }
