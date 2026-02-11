@@ -35,7 +35,8 @@ void safety_assert_failed_handler(const char* file, int line, AssertCode error_c
 
     /* Loop forever so we never do anything after the panic. */
     while (true) {
-        Serial.printf("Safety assertion failed! In file %s:%d with error code %s\n", file, line, error_code);
+        Serial.printf("Safety assertion failed! In file %s:%d with error code %d\n", file, line, error_code);
+        Serial.printf("File hash %lu\n", (unsigned long) str_hash(file));
 
         CriticalFault fault_msg;
         fault_msg.error_code = error_code;
@@ -55,7 +56,7 @@ void safety_assert_failed_handler(const char* file, int line, AssertCode error_c
 #ifdef ENABLE_DEBUGGING
 void soft_assert_failed_handler(const char* file, int line, AssertCode error_code) {
     /* Be sure to let us know if a soft assert failed. */
-    Serial.printf("Soft assertion failed! In file %s:%d with error code %s\n", file, line, error_code);
+    Serial.printf("Soft assertion failed! In file %s:%d with error code %d\n", file, line, error_code);
     /* Start the reset trigger. */
     SOFT_RESET_TRIGGER.start(millis(), SOFT_RESET_LENGTH_MS);
     longjmp(soft_assert_failed_goto_start_of_loop, 0);
@@ -85,6 +86,7 @@ void assert_failed_handler(AssertLevel level, const char* file, int line, Assert
 void setup() {
   // First things first, register the panic handler. If something goes
     // wrong during setup, we'll wind everything down.
+    // FIXME this broken, car won't start up so I commented out
   register_assert_failed_handler(assert_failed_handler);
   Serial.begin(SERIAL_BAUD_RATE);
 

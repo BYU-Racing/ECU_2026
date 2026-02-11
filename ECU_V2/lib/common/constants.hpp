@@ -33,18 +33,12 @@ constexpr int16_t BRAKE_CONSIDERED_PRESSED = 20;
 
 
 constexpr uint32_t STARTUP_DELAY_MS = 2000;  /* 2 seconds */
-`
+
 constexpr int16_t TORQUE_FLOOR = 10;
-<<<<<<< HEAD
 
 /* MAX TORQUE */
 /* N * 0.1 */
-constexpr int16_t MAX_TORQUE = 500;
+constexpr int16_t MAX_TORQUE = 200;
  
 /* Drive Modes */
 constexpr int8_t DRIVE_MODE = 0;
-=======
-/* MAX TORQUE VALUE */
-// 50 Nm 
-constexpr int16_t MAX_TORQUE = 500;
->>>>>>> february_test
