@@ -61,7 +61,6 @@ private:
     uint16_t torque_memory[4] = {0, 0, 0, 0};
 
     /* TIMING VARIABLES TO ENHANCE FUNCTION */
-    static constexpr uint32_t SMOOTH_PERIOD_MS = 10; 
     uint16_t last_output_torque = 0;
     uint32_t last_smooth_update_ms = 0;
 
