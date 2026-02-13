@@ -6,8 +6,6 @@
 #include "can_serde.hpp"
 #include "constants.hpp"
 
-/* ECU class declared to access smooth_torque function in throttle_map*/
-Ecu ecu;
 
 int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t new_min_32, int32_t new_max_32) {
     if (old_min_32 == old_max_32 || new_min_32 == new_max_32) {
@@ -34,35 +32,46 @@ int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t ne
     return output_shifted;
 }
 
-int16_t Ecu::smooth_torque(uint16_t torque) {
+int16_t Ecu::smooth_torque(uint16_t current_time_ms, uint16_t torque) {
     /* smooth out throttle values by averaging out previous four values */
+
     /* If recieves a value of 0 return 0 and set all values to 0 ;) */
     if (torque == 0) {
-        this->torque_memory[0] = 0;
-        this->torque_memory[1] = 0;
-        this->torque_memory[2] = 0;
-        this->torque_memory[3] = 0;
-        return 0;
-    } else {
-        uint16_t total_torque = 0;
-        /* cycle through last 4 torque values*/
-        this->torque_memory[3] = this->torque_memory[2];
-        this->torque_memory[2] = this->torque_memory[1];
-        this->torque_memory[1] = this->torque_memory[0];
-        this->torque_memory[0] = torque;
-
-        /* sum last 4 torque values */
-        for (int i = 0; i < 4; i++) {
-            total_torque += this->torque_memory[i];
+        for (int i = 0; i < 4; i++)
+        {
+            this->torque_memory[i] = 0;
         }
-
-        /* average out torque and check for errors */
-        total_torque = total_torque / 4;
-        SAFETY_ASSERT_CODE((total_torque >= 0), AssertCode::SmoothTorqueLessThanZero);
-
-        return total_torque;
+        this->last_output_torque = 0;
+        return 0;
     }
+
+    /* Continues to send same torque message until 20ms has passed */
+    if ((uint16_t)(current_time_ms - last_smooth_update_ms) < SMOOTH_PERIOD_MS)
+    {
+        return this->last_output_torque;
+    }
+    /* Starts timer for next cycle when 20ms has passed */
+    this->last_smooth_update_ms = current_time_ms;
+
+    uint16_t total_torque = 0;
+    /* cycle through last 4 torque values*/
+    this->torque_memory[3] = this->torque_memory[2];
+    this->torque_memory[2] = this->torque_memory[1];
+    this->torque_memory[1] = this->torque_memory[0];
+    this->torque_memory[0] = torque;
+
+    /* sum last 4 torque values */
+    for (int i = 0; i < 4; i++) {
+        total_torque += this->torque_memory[i];
+    }
+
+    /* average out torque and check for errors */
+    total_torque = total_torque / 4;
+    SAFETY_ASSERT_CODE((total_torque >= 0), AssertCode::SmoothTorqueLessThanZero);
+    this->last_output_torque = total_torque;
+    return total_torque;
 }
+
 
 int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     /* Make sure the throttle values are in range. */
@@ -92,9 +101,6 @@ int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     if (torque_mapped < 0) {
         torque_mapped = 0;
     }
-    
-    /* call smooth torque function */
-    torque_mapped = ecu.smooth_torque(torque_mapped);
 
     return torque_mapped;
 }
@@ -136,9 +142,9 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg)
 
         // FIXME this isn't working
         /* Brake and throttle cannot be pressed at the same time. */
-        SAFETY_ASSERT_CODE(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_CONSIDERED_PRESSED), AssertCode::BrakeAndThrottle);
-
-        this->calculated_torque = mapped_torque;
+        // SAFETY_ASSERT_CODE(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_CONSIDERED_PRESSED), AssertCode::BrakeAndThrottle);
+        int16_t smoothed_torque = smooth_torque(current_time_ms, mapped_torque);
+        this->calculated_torque = smoothed_torque;
     }
 
     bool debounced_switch;

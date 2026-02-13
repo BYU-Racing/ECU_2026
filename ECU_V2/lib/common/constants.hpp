@@ -21,6 +21,8 @@ constexpr uint16_t THROTTLE_DISAGREE = 10;
 
 constexpr int16_t MIN_THROTTLE = 0; /* In CASCADIA format, 1 = 0.1Nm */
 constexpr int16_t MAX_THROTTLE = 100; /* In CASCADIA format, 1 = 0.1Nm */
+constexpr uint32_t SMOOTH_PERIOD_MS = 10; /* How often the input is smoothed */
+
 
 /* BRAKES */
 /* The reported brake level should never be lower than this, or it is considered
