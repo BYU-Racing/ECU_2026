@@ -17,7 +17,7 @@ public:
     std::optional<CAN_message_t> emitMessage(uint32_t current_time_ms);
 
     /* smooth torque */
-    int16_t smooth_torque(uint16_t torque, uint16_t current_time);
+    int16_t smooth_torque(uint16_t current_time, uint16_t torque);
 
     /* Uses PRINTF for all printing. */
     void printState();
