@@ -156,46 +156,6 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
     bool debounced_switch;
 
     /* FIXME hack working around the non-debounced switch. */
-    if (this->last_start_switch_value == this->start_switch_on)
-    {
-        /* Nothing to do, as the last value is the same as the current value. */
-        debounced_switch = this->start_switch_on;
-        this->turn_off_timeout.cancel();
-    }
-    else if (this->start_switch_on)
-    {
-        debounced_switch = true;
-        this->last_start_switch_value = true;
-        this->turn_off_timeout.cancel();
-    }
-    else
-    {
-        /* The switch was turned off, but we need to wait a second before
-         * considering it switched off. */
-
-        if (!this->turn_off_timeout.started())
-        {
-            /* If we haven't started the timer yet, go ahead and start it. */
-            this->turn_off_timeout.start(current_time_ms, 1000);
-            /* Keep the last value while we wait. */
-            debounced_switch = true;
-        }
-        else if (this->turn_off_timeout.triggerReached(current_time_ms))
-        {
-            /* It's been long enough to consider it off. */
-            debounced_switch = false;
-            this->last_start_switch_value = false;
-        }
-        else
-        {
-            /* Timer is running but hasn't reached yet - keep the old value. */
-            debounced_switch = true;
-        }
-    }
-
-    bool debounced_switch;
-
-    /* FIXME hack working around the non-debounced switch. */
     if (this->last_start_switch_value == this->start_switch_on) {
         /* Nothing to do, as the last value is the same as the current value. */
         debounced_switch = this->start_switch_on;
