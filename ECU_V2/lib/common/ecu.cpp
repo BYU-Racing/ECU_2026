@@ -6,9 +6,10 @@
 #include "can_serde.hpp"
 #include "constants.hpp"
 
-
-int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t new_min_32, int32_t new_max_32) {
-    if (old_min_32 == old_max_32 || new_min_32 == new_max_32) {
+int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t new_min_32, int32_t new_max_32)
+{
+    if (old_min_32 == old_max_32 || new_min_32 == new_max_32)
+    {
         /* Avoid division by zero. */
         return 0;
     }
@@ -32,18 +33,24 @@ int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t ne
     return output_shifted;
 }
 
-int16_t Ecu::smoothTorque(uint16_t current_time_ms, uint16_t torque) {
-    /* smooth out throttle values by averaging out previous four values */
+int16_t Ecu::smoothTorque(uint32_t current_time_ms, int16_t torque)
+{
+    /* Smooth out throttle values by averaging out previous four values. */
+
+    static_assert(sizeof(this->torque_memory) / sizeof(this->torque_memory[0]) == 4);
 
     /* If recieves a value of 0 return 0 and set all values to 0 ;) */
-    if (torque == 0) {
-        this->torque_memory[0] = 0;
-        this->torque_memory[1] = 0;
-        this->torque_memory[2] = 0;
-        this->torque_memory[3] = 0;
+    if (torque == 0)
+    {
+        for (size_t i = 0; i < 4; i++)
+        {
+            this->torque_memory[i] = 0;
+        }
         return 0;
-    } else {
-        uint16_t total_torque = 0;
+    }
+    else
+    {
+        int16_t total_torque = 0;
         /* cycle through last 4 torque values*/
         this->torque_memory[3] = this->torque_memory[2];
         this->torque_memory[2] = this->torque_memory[1];
@@ -51,7 +58,8 @@ int16_t Ecu::smoothTorque(uint16_t current_time_ms, uint16_t torque) {
         this->torque_memory[0] = torque;
 
         /* sum last 4 torque values */
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++)
+        {
             total_torque += this->torque_memory[i];
         }
         this->last_output_torque = 0;
@@ -59,14 +67,14 @@ int16_t Ecu::smoothTorque(uint16_t current_time_ms, uint16_t torque) {
     }
 
     /* Continues to send same torque message until 20ms has passed */
-    if ((uint16_t)(current_time_ms - last_smooth_update_ms) < SMOOTH_PERIOD_MS)
+    if (current_time_ms - last_smooth_update_ms < SMOOTH_PERIOD_MS)
     {
         return this->last_output_torque;
     }
     /* Starts timer for next cycle when 20ms has passed */
     this->last_smooth_update_ms = current_time_ms;
 
-    uint16_t total_torque = 0;
+    int16_t total_torque = 0;
     /* cycle through last 4 torque values*/
     this->torque_memory[3] = this->torque_memory[2];
     this->torque_memory[2] = this->torque_memory[1];
@@ -74,7 +82,8 @@ int16_t Ecu::smoothTorque(uint16_t current_time_ms, uint16_t torque) {
     this->torque_memory[0] = torque;
 
     /* sum last 4 torque values */
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++)
+    {
         total_torque += this->torque_memory[i];
     }
 
@@ -85,8 +94,8 @@ int16_t Ecu::smoothTorque(uint16_t current_time_ms, uint16_t torque) {
     return total_torque;
 }
 
-
-int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
+int16_t throttle_map(uint16_t throttle1, uint16_t throttle2)
+{
     /* Make sure the throttle values are in range. */
     SAFETY_ASSERT((throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX), AssertCode::ThrottleOutOfRange);
 
@@ -112,7 +121,8 @@ int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     return static_cast<int16_t>(torque_mapped);
 }
 
-void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
+void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg)
+{
     /* If we received a CAN message, update the corresponding value. */
     switch (static_cast<MessageId>(msg.id))
     {
@@ -156,28 +166,38 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
     bool debounced_switch;
 
     /* FIXME hack working around the non-debounced switch. */
-    if (this->last_start_switch_value == this->start_switch_on) {
+    if (this->last_start_switch_value == this->start_switch_on)
+    {
         /* Nothing to do, as the last value is the same as the current value. */
         debounced_switch = this->start_switch_on;
         this->turn_off_timeout.cancel();
-    } else if (this->start_switch_on) {
+    }
+    else if (this->start_switch_on)
+    {
         debounced_switch = true;
         this->last_start_switch_value = true;
         this->turn_off_timeout.cancel();
-    } else {
+    }
+    else
+    {
         /* The switch was turned off, but we need to wait a second before
          * considering it switched off. */
 
-        if (!this->turn_off_timeout.started()) {
+        if (!this->turn_off_timeout.started())
+        {
             /* If we haven't started the timer yet, go ahead and start it. */
             this->turn_off_timeout.start(current_time_ms, 1000);
             /* Keep the last value while we wait. */
             debounced_switch = true;
-        } else if (this->turn_off_timeout.triggerReached(current_time_ms)) {
+        }
+        else if (this->turn_off_timeout.triggerReached(current_time_ms))
+        {
             /* It's been long enough to consider it off. */
             debounced_switch = false;
             this->last_start_switch_value = false;
-        } else {
+        }
+        else
+        {
             /* Timer is running but hasn't reached yet - keep the old value. */
             debounced_switch = true;
         }
@@ -196,10 +216,14 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
          * Once these preconditions are met, we can do the startup sequence.
          * We will also wait two seconds before fully starting up, or abort if
          * one of the preconditions stops holding. */
-        if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && debounced_switch) {
-            if (!this->startup_countdown.started()) {
+        if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && debounced_switch)
+        {
+            if (!this->startup_countdown.started())
+            {
                 this->startup_countdown.start(current_time_ms, STARTUP_DELAY_MS);
-            } else if (this->startup_countdown.triggerReached(current_time_ms)) {
+            }
+            else if (this->startup_countdown.triggerReached(current_time_ms))
+            {
                 /* Good to go! */
                 this->car_fully_on = true;
             }
@@ -211,7 +235,8 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
         }
     }
 
-    if (!debounced_switch) {
+    if (!debounced_switch)
+    {
         /* Pretty self-explanatory: if the start switch turns off, the car turns off. */
         this->car_fully_on = false;
     }
@@ -239,7 +264,8 @@ std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms)
     }
 
     /* Pace how often we send a motor command by pacing it with a timer. */
-    if (this->motor_control_pacing.shouldFire(current_time_ms)) {
+    if (this->motor_control_pacing.shouldFire(current_time_ms))
+    {
         MotorControlCommand cmd;
         cmd.torque = torque_to_use;
         cmd.speed = 0;
