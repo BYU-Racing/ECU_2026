@@ -202,14 +202,8 @@ std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms) {
         torque_to_use = this->calculated_torque;
     }
 
-    /* We need to pace how often motor control messages are passed along the CAN bus.
-     * We do this by using a trigger. To use the trigger, we first start it. Once
-     * enough time has passed since we started it, `triggerReached` will return true,
-     * and mark the trigger as not started. Next time, we'll see that the trigger is
-     * marked as not started, and we'll start it again. This loops forever. */
-    if (!this->motor_control_message_pacing.started()) {
-        this->motor_control_message_pacing.start(current_time_ms, 15/*ms*/);
-    } else if (this->motor_control_message_pacing.triggerReached(current_time_ms)) {
+    /* Pace how often we send a motor command by pacing it with a timer. */
+    if (this->motor_control_pacing.shouldFire(current_time_ms)) {
         MotorControlCommand cmd;
         cmd.torque = torque_to_use;
         cmd.speed = 0;
@@ -247,5 +241,4 @@ void Ecu::printState() {
     }
 
     PRINTF("startup_countdown: %s\n", this->startup_countdown.started() ? "started" : "not started");
-    PRINTF("motor_control_message_pacing: %s\n", this->motor_control_message_pacing.started() ? "started" : "not started");
 }

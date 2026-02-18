@@ -58,8 +58,8 @@ private:
      * wait 2 seconds before enabling the motor. This is that startup countdown. */
     Trigger startup_countdown;
 
-    /* Time since we last sent a motor control command. */
-    Trigger motor_control_message_pacing;
+    /* Timer to pace how often we send motor control commands. */
+    Timer motor_control_pacing = Timer(0, 15);
 
     /* throttle mapping memory */
     uint16_t torque_memory[4] = {0, 0, 0, 0};

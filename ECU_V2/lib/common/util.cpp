@@ -31,6 +31,33 @@ void Trigger::cancel() {
     started_at = std::nullopt;
 }
 
+
+/* Timer */
+Timer::Timer(uint32_t current_time, uint32_t duration_ms) {
+    this->last_fired_at = current_time;
+    this->duration_ms = duration_ms;
+}
+
+/* Important: this will reset the timer when this returns true. */
+bool Timer::shouldFire(uint32_t current_time) {
+    if (current_time - this->last_fired_at >= this->duration_ms) {
+        this->last_fired_at = current_time;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* Tells us how long until this timer will fire again, or std::nullopt if
+ * it's due to fire. */
+std::optional<uint32_t> Timer::timeUntilNextFiring(uint32_t current_time_ms) {
+    if (current_time_ms - this->last_fired_at < this->duration_ms) {
+        return this->duration_ms - (current_time_ms - this->last_fired_at);
+    } else {
+        return std::nullopt;
+    }
+}
+
 /* Used to condense the file name into something short enough we can send
  * along the CAN bus in the case of a fault. */
 uint32_t str_hash(const char *str) {

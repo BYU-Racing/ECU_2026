@@ -16,6 +16,16 @@ private:
     uint32_t target_duration = 0;
 };
 
+class Timer {
+public:
+    Timer(uint32_t current_time, uint32_t frequency);
+    bool shouldFire(uint32_t current_time);
+    std::optional<uint32_t> timeUntilNextFiring(uint32_t current_time_ms);
+private:
+    uint32_t last_fired_at = 0;
+    uint32_t duration_ms = 0;
+};
+
 #ifdef BUILD_MODE_TEST
 #include <cstdio>
 #define PRINTF(...) printf(__VA_ARGS__)
