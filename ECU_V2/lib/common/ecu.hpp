@@ -17,7 +17,7 @@ public:
     std::optional<CAN_message_t> emitMessage(uint32_t current_time_ms);
 
     /* smooth torque */
-    int16_t smooth_torque(uint16_t torque);
+    int16_t smooth_torque(uint16_t current_time, uint16_t torque);
 
     /* Uses PRINTF for all printing. */
     void printState();
@@ -43,6 +43,10 @@ private:
 
     /* Whether the car is switched on or not. */
     bool start_switch_on = false;
+
+    /* FIXME this is a hack to work around the start switch sensor. */
+    bool last_start_switch_value = false;
+    Trigger turn_off_timeout;
 
     /* How far the brake is pressed down. */
     uint16_t brake_pressure = BRAKE_PRESSURE_MIN;
