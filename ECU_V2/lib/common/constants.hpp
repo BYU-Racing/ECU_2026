@@ -2,15 +2,18 @@
 
 #include <cstdint>
 
+/* ASSERTS */
+constexpr uint32_t SOFT_RESET_LENGTH_MS = 2000;
+
 /* COMMUNICATIONS */
 constexpr long SERIAL_BAUD_RATE = 115200;
 constexpr uint32_t CAN_BAUD_RATE = 250000;
 
-constexpr int16_t THROTTLE1_MIN = 0;
-constexpr int16_t THROTTLE1_MAX = 160;
+constexpr int16_t THROTTLE1_MIN = 720;
+constexpr int16_t THROTTLE1_MAX = 995;
 
-constexpr int16_t THROTTLE2_MIN = 0;
-constexpr int16_t THROTTLE2_MAX = 70;
+constexpr int16_t THROTTLE2_MIN = 165;
+constexpr int16_t THROTTLE2_MAX = 180;
 
 /* Maximum allowed difference between the two throttles' values,
  * after those values have been mapped to [THROTTLE[X]_MIN, THROTTLE[X]_MAX]. */
@@ -18,6 +21,8 @@ constexpr uint16_t THROTTLE_DISAGREE = 10;
 
 constexpr int16_t MIN_THROTTLE = 0; /* In CASCADIA format, 1 = 0.1Nm */
 constexpr int16_t MAX_THROTTLE = 100; /* In CASCADIA format, 1 = 0.1Nm */
+constexpr uint32_t SMOOTH_PERIOD_MS = 10; /* How often the input is smoothed */
+
 
 /* BRAKES */
 /* The reported brake level should never be lower than this, or it is considered
@@ -32,3 +37,10 @@ constexpr int16_t BRAKE_CONSIDERED_PRESSED = 20;
 constexpr uint32_t STARTUP_DELAY_MS = 2000;  /* 2 seconds */
 
 constexpr int16_t TORQUE_FLOOR = 10;
+
+/* MAX TORQUE */
+/* N * 0.1 */
+constexpr int16_t MAX_TORQUE = 200;
+ 
+/* Drive Modes */
+constexpr int8_t DRIVE_MODE = 0;

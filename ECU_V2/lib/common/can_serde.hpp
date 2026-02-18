@@ -3,6 +3,7 @@
  */
 #pragma once
 
+#include "assert.hpp"
 #include "CAN_message_t.hpp"
 
 /* All the CAN messages with their associated IDs. */
@@ -98,6 +99,12 @@ enum class RvcType: uint8_t {
 struct RvcMessage {
     RvcType type;
     float value;
+};
+
+struct CriticalFault {
+    AssertCode error_code;
+    uint16_t assert_failure_line;
+    uint32_t file_name_hash;
 };
 
 enum class TirePosition: uint8_t {
@@ -448,6 +455,7 @@ TireTemperatureMessage parse_tire_temperature(CAN_message_t msg);
 CAN_message_t create_tire_temperature(TireTemperatureMessage value);
 LapMessage parse_lap(CAN_message_t msg);
 CAN_message_t create_lap(LapMessage value);
+CAN_message_t create_critical_fault_command(CriticalFault value);
 
 MotorTemperaturesOne parse_motor_temperatures_one(CAN_message_t msg);
 MotorTemperaturesTwo parse_motor_temperatures_two(CAN_message_t msg);

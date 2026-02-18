@@ -16,6 +16,9 @@ public:
      * along the CAN bus. */
     std::optional<CAN_message_t> emitMessage(uint32_t current_time_ms);
 
+    /* smooth torque */
+    int16_t smooth_torque(uint16_t current_time, uint16_t torque);
+
     /* Uses PRINTF for all printing. */
     void printState();
 
@@ -41,6 +44,10 @@ private:
     /* Whether the car is switched on or not. */
     bool start_switch_on = false;
 
+    /* FIXME this is a hack to work around the start switch sensor. */
+    bool last_start_switch_value = false;
+    Trigger turn_off_timeout;
+
     /* How far the brake is pressed down. */
     uint16_t brake_pressure = BRAKE_PRESSURE_MIN;
 
@@ -53,4 +60,12 @@ private:
 
     /* Time since we last sent a motor control command. */
     Trigger motor_control_message_pacing;
+
+    /* throttle mapping memory */
+    uint16_t torque_memory[4] = {0, 0, 0, 0};
+
+    /* TIMING VARIABLES TO ENHANCE FUNCTION */
+    uint16_t last_output_torque = 0;
+    uint32_t last_smooth_update_ms = 0;
+
 };

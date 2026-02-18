@@ -17,7 +17,7 @@ void tearDown(void) {
     // clean stuff up here
 }
 
-void panic_handler(const char *file, int line, const char *msg) {
+void safety_assert_failed_handler(AssertLevel level, const char *file, int line, AssertCode error_code) {
     /* If an SAFETY_ASSERT fails somewhere in the code, this will let the testing environment
      * know that we failed the test. */
     std::stringstream fail_msg;
@@ -190,7 +190,7 @@ void test_inverter_creation_message() {
 }
 
 int main(int argc, char **argv) {
-    register_panic_handler(panic_handler);
+    register_assert_failed_handler(safety_assert_failed_handler);
 
     UNITY_BEGIN();
     RUN_TEST(test_start_switch);

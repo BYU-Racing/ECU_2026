@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <optional>
 
@@ -21,3 +23,5 @@ private:
 #include "Arduino.h"
 #define PRINTF(...) Serial.printf(__VA_ARGS__)
 #endif
+
+uint32_t str_hash(const char *str);
