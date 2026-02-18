@@ -1,0 +1,171 @@
+19:24:12.756 > === ECU State ===
+19:24:12.758 > car_fully_on: false
+19:24:12.758 > start_switch_on: false
+19:24:12.758 > brake_pressure: 10
+19:24:12.758 > calculated_torque: 0
+19:24:12.758 > throttle1_pos: (none)
+19:24:12.758 > throttle2_pos: (none)
+19:24:12.758 > startup_countdown: not started
+19:24:12.758 > motor_control_message_pacing: started
+19:24:13.257 > === ECU State ===
+19:24:13.257 > car_fully_on: false
+19:24:13.257 > start_switch_on: false
+19:24:13.257 > brake_pressure: 10
+19:24:13.257 > calculated_torque: 0
+19:24:13.257 > throttle1_pos: (none)
+19:24:13.257 > throttle2_pos: (none)
+19:24:13.257 > startup_countdown: not started
+19:24:13.257 > motor_control_message_pacing: started
+19:24:13.757 > === ECU State ===
+19:24:13.757 > car_fully_on: false
+19:24:13.757 > start_switch_on: false
+19:24:13.757 > brake_pressure: 10
+19:24:13.757 > calculated_torque: 0
+19:24:13.757 > throttle1_pos: (none)
+19:24:13.757 > throttle2_pos: (none)
+19:24:13.757 > startup_countdown: not started
+19:24:13.757 > motor_control_message_pacing: started
+19:24:14.257 > === ECU State ===
+19:24:14.257 > car_fully_on: false
+19:24:14.257 > start_switch_on: false
+19:24:14.257 > brake_pressure: 10
+19:24:14.257 > calculated_torque: 0
+19:24:14.257 > throttle1_pos: (none)
+19:24:14.257 > throttle2_pos: (none)
+19:24:14.257 > startup_countdown: not started
+19:24:14.257 > motor_control_message_pacing: started
+19:24:14.757 > === ECU State ===
+19:24:14.758 > car_fully_on: false
+19:24:14.758 > start_switch_on: false
+19:24:14.758 > brake_pressure: 10
+19:24:14.758 > calculated_torque: 0
+19:24:14.758 > throttle1_pos: (none)
+19:24:14.758 > throttle2_pos: (none)
+19:24:14.758 > startup_countdown: not started
+19:24:14.758 > motor_control_message_pacing: started
+19:24:15.256 > === ECU State ===
+19:24:15.258 > car_fully_on: false
+19:24:15.258 > start_switch_on: false
+19:24:15.258 > brake_pressure: 10
+19:24:15.258 > calculated_torque: 0
+19:24:15.258 > throttle1_pos: (none)
+19:24:15.258 > throttle2_pos: (none)
+19:24:15.258 > startup_countdown: not started
+19:24:15.258 > motor_control_message_pacing: started
+19:24:15.756 > === ECU State ===
+19:24:15.757 > car_fully_on: false
+19:24:15.757 > start_switch_on: false
+19:24:15.757 > brake_pressure: 10
+19:24:15.757 > calculated_torque: 0
+19:24:15.757 > throttle1_pos: (none)
+19:24:15.757 > throttle2_pos: (none)
+19:24:15.757 > startup_countdown: not started
+19:24:15.757 > motor_control_message_pacing: started
+19:24:16.256 > === ECU State ===
+19:24:16.257 > car_fully_on: false
+19:24:16.257 > start_switch_on: false
+19:24:16.257 > brake_pressure: 10
+19:24:16.257 > calculated_torque: 0
+19:24:16.257 > throttle1_pos: (none)
+19:24:16.257 > throttle2_pos: (none)
+19:24:16.257 > startup_countdown: not started
+19:24:16.257 > motor_control_message_pacing: started
+19:24:16.756 > === ECU State ===
+19:24:16.757 > car_fully_on: false
+19:24:16.757 > start_switch_on: false
+19:24:16.757 > brake_pressure: 10
+19:24:16.757 > calculated_torque: 0
+19:24:16.757 > throttle1_pos: (none)
+19:24:16.757 > throttle2_pos: (none)
+19:24:16.757 > startup_countdown: not started
+19:24:16.757 > motor_control_message_pacing: started
+19:24:17.256 > === ECU State ===
+19:24:17.257 > car_fully_on: false
+19:24:17.257 > start_switch_on: false
+19:24:17.257 > brake_pressure: 10
+19:24:17.257 > calculated_torque: 0
+19:24:17.257 > throttle1_pos: (none)
+19:24:17.257 > throttle2_pos: (none)
+19:24:17.257 > startup_countdown: not started
+19:24:17.257 > motor_control_message_pacing: started
+19:24:17.756 > === ECU State ===
+19:24:17.757 > car_fully_on: false
+19:24:17.757 > start_switch_on: false
+19:24:17.757 > brake_pressure: 10
+19:24:17.757 > calculated_torque: 0
+19:24:17.757 > throttle1_pos: (none)
+19:24:17.757 > throttle2_pos: (none)
+19:24:17.757 > startup_countdown: not started
+19:24:17.757 > motor_control_message_pacing: started
+19:24:18.256 > === ECU State ===
+19:24:18.257 > car_fully_on: false
+19:24:18.257 > start_switch_on: false
+19:24:18.257 > brake_pressure: 10
+19:24:18.257 > calculated_torque: 0
+19:24:18.257 > throttle1_pos: (none)
+19:24:18.257 > throttle2_pos: (none)
+19:24:18.257 > startup_countdown: not started
+19:24:18.257 > motor_control_message_pacing: started
+19:24:18.757 > === ECU State ===
+19:24:18.757 > car_fully_on: false
+19:24:18.757 > start_switch_on: false
+19:24:18.757 > brake_pressure: 10
+19:24:18.757 > calculated_torque: 0
+19:24:18.757 > throttle1_pos: (none)
+19:24:18.757 > throttle2_pos: (none)
+19:24:18.757 > startup_countdown: not started
+19:24:18.757 > motor_control_message_pacing: started
+19:24:19.256 > === ECU State ===
+19:24:19.257 > car_fully_on: false
+19:24:19.257 > start_switch_on: false
+19:24:19.257 > brake_pressure: 10
+19:24:19.257 > calculated_torque: 0
+19:24:19.257 > throttle1_pos: (none)
+19:24:19.257 > throttle2_pos: (none)
+19:24:19.257 > startup_countdown: not started
+19:24:19.257 > motor_control_message_pacing: started
+19:24:19.757 > === ECU State ===
+19:24:19.757 > car_fully_on: false
+19:24:19.757 > start_switch_on: false
+19:24:19.757 > brake_pressure: 10
+19:24:19.757 > calculated_torque: 0
+19:24:19.757 > throttle1_pos: (none)
+19:24:19.757 > throttle2_pos: (none)
+19:24:19.757 > startup_countdown: not started
+19:24:19.757 > motor_control_message_pacing: started
+19:24:20.256 > === ECU State ===
+19:24:20.257 > car_fully_on: false
+19:24:20.257 > start_switch_on: false
+19:24:20.257 > brake_pressure: 10
+19:24:20.257 > calculated_torque: 0
+19:24:20.257 > throttle1_pos: (none)
+19:24:20.257 > throttle2_pos: (none)
+19:24:20.257 > startup_countdown: not started
+19:24:20.257 > motor_control_message_pacing: started
+19:24:20.756 > === ECU State ===
+19:24:20.757 > car_fully_on: false
+19:24:20.757 > start_switch_on: false
+19:24:20.757 > brake_pressure: 10
+19:24:20.757 > calculated_torque: 0
+19:24:20.757 > throttle1_pos: (none)
+19:24:20.757 > throttle2_pos: (none)
+19:24:20.757 > startup_countdown: not started
+19:24:20.757 > motor_control_message_pacing: started
+19:24:21.257 > === ECU State ===
+19:24:21.258 > car_fully_on: false
+19:24:21.258 > start_switch_on: false
+19:24:21.258 > brake_pressure: 10
+19:24:21.258 > calculated_torque: 0
+19:24:21.258 > throttle1_pos: (none)
+19:24:21.258 > throttle2_pos: (none)
+19:24:21.258 > startup_countdown: not started
+19:24:21.258 > motor_control_message_pacing: started
+19:24:21.757 > === ECU State ===
+19:24:21.757 > car_fully_on: false
+19:24:21.757 > start_switch_on: false
+19:24:21.757 > brake_pressure: 10
+19:24:21.757 > calculated_torque: 0
+19:24:21.757 > throttle1_pos: (none)
+19:24:21.757 > throttle2_pos: (none)
+19:24:21.757 > startup_countdown: not started
+19:24:21.757 > motor_control_message_pacing: started

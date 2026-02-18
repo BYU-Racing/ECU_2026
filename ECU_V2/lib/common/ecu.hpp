@@ -17,7 +17,7 @@ public:
     std::optional<CAN_message_t> emitMessage(uint32_t current_time_ms);
 
     /* smooth torque */
-    int16_t smooth_torque(uint16_t torque);
+    int16_t smoothTorque(uint16_t current_time, uint16_t torque);
 
     /* Uses PRINTF for all printing. */
     void printState();
@@ -63,5 +63,9 @@ private:
 
     /* throttle mapping memory */
     uint16_t torque_memory[4] = {0, 0, 0, 0};
+
+    /* TIMING VARIABLES TO ENHANCE FUNCTION */
+    uint16_t last_output_torque = 0;
+    uint32_t last_smooth_update_ms = 0;
 
 };

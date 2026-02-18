@@ -579,7 +579,7 @@ CAN_message_t create_motor_control_command(MotorControlCommand value) {
 }
 
 CAN_message_t create_critical_fault_command(CriticalFault value) {
-    CAN_message_t new_message = empty_can_message(MessageId::Fault, 3);
+    CAN_message_t new_message = empty_can_message(MessageId::Fault, 8);
 
     new_message.buf[0] = static_cast<uint8_t>(value.error_code);
     write_i16_le(&new_message.buf[1], value.assert_failure_line);
