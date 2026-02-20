@@ -76,14 +76,12 @@ int16_t Ecu::smooth_torque(uint16_t current_time_ms, uint16_t torque) {
 int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
     /* Make sure the throttle values are in range. */
     SAFETY_ASSERT_CODE((throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX), AssertCode::ThrottleOutOfRange);
-    SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
+    SAFETY_ASSERT_CODE((throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX), AssertCode::ThrottleOutOfRange);
 
     int64_t throttle1_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
     /* DEBUG ONLY!!!! Throttle 2 set to throttle 1 :) */
     // int64_t throttle2_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
     int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
-
-    // int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
 
     // FIXME this is throwing an error
     /* Make sure the two throttle values haven't diverged too far. */
@@ -142,7 +140,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg)
 
         // FIXME this isn't working
         /* Brake and throttle cannot be pressed at the same time. */
-        // SAFETY_ASSERT_CODE(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_CONSIDERED_PRESSED), AssertCode::BrakeAndThrottle);
+        SAFETY_ASSERT_CODE(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_THRESHOLD), AssertCode::BrakeAndThrottle);
         int16_t smoothed_torque = smooth_torque(current_time_ms, mapped_torque);
         this->calculated_torque = smoothed_torque;
     }
@@ -202,8 +200,8 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg)
          * one of the preconditions stops holding. */
 
         /* DEBUG ONLY */
-        // TODO this needs to be looked over 
-        // if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && this->start_switch_on) {
+        // FIXME this needs to be looked over 
+        // if ((this->brake_pressure >= BRAKE_THRESHOLD) && this->start_switch_on) {
         if (this->start_switch_on) {
             if (!this->startup_countdown.started())
             {
@@ -234,7 +232,7 @@ std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms)
     /* Engine is enabled if all the preconditions of `car_fully_on` passed,
      * and if the brake is up. We don't enable the inverter until the
      * driver has lifted up the brake.  */
-    // if (this->car_fully_on && this->brake_pressure < BRAKE_CONSIDERED_PRESSED) {
+    // if (this->car_fully_on && this->brake_pressure < BRAKE_THRESHOLD) {
     if (this->car_fully_on)
     {
         inverter_enabled = true;
