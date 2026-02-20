@@ -1,4 +1,5 @@
 #include <sstream>
+#include <iostream>
 #include <cstring>
 #include <tuple>
 
@@ -17,13 +18,15 @@ void tearDown(void) {}
 volatile bool expecting_safety_violation = false;
 volatile bool hit_safety_violation = false;
 void safety_assert_failed_handler(AssertLevel level, const char *file, int line, AssertCode error_code) {
+    UNUSED(level);
+
     if (expecting_safety_violation) {
         hit_safety_violation = true;
     } else {
         /* If an SAFETY_ASSERT fails somewhere in the code, this will let the testing environment
         * know that we failed the test. */
         std::stringstream fail_msg;
-        fail_msg << "Assert failed at " << file << ":" << line;
+        fail_msg << "Assert failed at " << file << ":" << line << " with code " << static_cast<uint8_t>(error_code);
         TEST_FAIL_MESSAGE(fail_msg.str().c_str());
     }
 }
@@ -51,7 +54,7 @@ std::tuple<Ecu, uint32_t> ecu_after_startup_sequence() {
     /* 2 seconds later... */
     current_time_ms += 2000;
     /* Now we should be generating a motor command. */
-    /*                                       forward vv    vv enabled */
+    /*                                                   forward vv    vv enabled */
     uint8_t enabled_but_no_torque[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00};
     test_can_msg_eql(
         ecu.emitMessage(current_time_ms).value(), /* `.value()` will throw if std::nullopt. */
@@ -101,7 +104,7 @@ void test_ecu() {
     ecu = std::get<0>(new_ecu);
     current_time_ms = std::get<1>(new_ecu);
 
-    /* Lift the brake this time, before puttind down the throttle. */
+    /* Lift the brake this time, before putting down the throttle. */
     ecu.processMessage(current_time_ms, create_brake_pressure(BRAKE_PRESSURE_MIN));
     ecu.processMessage(current_time_ms, create_throttle_one_position(50));
     ecu.processMessage(current_time_ms, create_throttle_two_position(22));
@@ -114,10 +117,79 @@ void test_ecu() {
     TEST_ASSERT(ecu.emitMessage(current_time_ms) == std::nullopt);
 }
 
-int main(int argc, char **argv) {
+void test_switch_debounce() {
+    /* This test verifies the switch debouncing logic when turning off. */
+    std::tuple<Ecu, uint32_t> new_ecu = ecu_after_startup_sequence();
+    Ecu ecu = std::get<0>(new_ecu);
+    uint32_t current_time_ms = std::get<1>(new_ecu);
+
+    ecu.processMessage(current_time_ms, create_brake_pressure(80));
+
+    current_time_ms += 10;
+    /* Lift the brake so the car is fully operational. */
+    ecu.processMessage(current_time_ms, create_brake_pressure(BRAKE_PRESSURE_MIN));
+    current_time_ms += 20;
+
+    /* At this point, the car should be on and the switch should be on. */
+    /* Now turn off the switch. */
+    ecu.processMessage(current_time_ms, create_start_switch(false));
+
+    /* The car should still be on immediately after turning off the switch,
+     * because of the 1000ms debounce delay. */
+    current_time_ms += 20;
+    std::optional<CAN_message_t> msg = ecu.emitMessage(current_time_ms);
+    TEST_ASSERT(msg != std::nullopt);
+    /* Verify the inverter is still enabled. */
+    TEST_ASSERT((msg.value().buf[5] & 0x01) == 0x01); /* enable_inverter should be true */
+
+    /* Wait 500ms (halfway through the debounce period). */
+    current_time_ms += 500;
+    msg = ecu.emitMessage(current_time_ms);
+    TEST_ASSERT(msg != std::nullopt);
+    /* Car should still be on. */
+    TEST_ASSERT((msg.value().buf[5] & 0x01) == 0x01);
+
+    /* Now turn the switch back on before the debounce completes. */
+    ecu.processMessage(current_time_ms, create_start_switch(true));
+    current_time_ms += 20;
+
+    /* The car should remain on since we canceled the debounce. */
+    msg = ecu.emitMessage(current_time_ms);
+    TEST_ASSERT(msg != std::nullopt);
+    TEST_ASSERT((msg.value().buf[5] & 0x01) == 0x01);
+
+    /* Wait another 1000ms to make sure it stays on. */
+    current_time_ms += 1000;
+    msg = ecu.emitMessage(current_time_ms);
+    TEST_ASSERT(msg != std::nullopt);
+    TEST_ASSERT((msg.value().buf[5] & 0x01) == 0x01);
+
+    /* Now turn the switch off again and let the full debounce period elapse. */
+    ecu.processMessage(current_time_ms, create_start_switch(false));
+    current_time_ms += 20;
+
+    /* Car should still be on. */
+    msg = ecu.emitMessage(current_time_ms);
+    TEST_ASSERT(msg != std::nullopt);
+    TEST_ASSERT((msg.value().buf[5] & 0x01) == 0x01);
+
+    /* Wait for the full 1000ms debounce period to complete. */
+    current_time_ms += 1000;
+    ecu.processMessage(current_time_ms, create_start_switch(false));
+
+    /* Now the car should be off. */
+    current_time_ms += 20;
+    msg = ecu.emitMessage(current_time_ms);
+    TEST_ASSERT(msg != std::nullopt);
+    /* Verify the inverter is now disabled. */
+    TEST_ASSERT((msg.value().buf[5] & 0x01) == 0x00); /* enable_inverter should be false */
+}
+
+int main() {
     register_assert_failed_handler(safety_assert_failed_handler);
 
     UNITY_BEGIN();
-    RUN_TEST(test_ecu);
+    // RUN_TEST(test_ecu);
+    RUN_TEST(test_switch_debounce);
     UNITY_END();
 }

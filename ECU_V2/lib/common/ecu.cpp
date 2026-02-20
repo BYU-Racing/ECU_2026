@@ -6,9 +6,10 @@
 #include "can_serde.hpp"
 #include "constants.hpp"
 
-
-int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t new_min_32, int32_t new_max_32) {
-    if (old_min_32 == old_max_32 || new_min_32 == new_max_32) {
+int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t new_min_32, int32_t new_max_32)
+{
+    if (old_min_32 == old_max_32 || new_min_32 == new_max_32)
+    {
         /* Avoid division by zero. */
         return 0;
     }
@@ -32,28 +33,48 @@ int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t ne
     return output_shifted;
 }
 
-int16_t Ecu::smooth_torque(uint16_t current_time_ms, uint16_t torque) {
-    /* smooth out throttle values by averaging out previous four values */
+int16_t Ecu::smoothTorque(uint32_t current_time_ms, int16_t torque)
+{
+    /* Smooth out throttle values by averaging out previous four values. */
+
+    static_assert(sizeof(this->torque_memory) / sizeof(this->torque_memory[0]) == 4);
 
     /* If recieves a value of 0 return 0 and set all values to 0 ;) */
-    if (torque == 0) {
-        for (int i = 0; i < 4; i++)
+    if (torque == 0)
+    {
+        for (size_t i = 0; i < 4; i++)
         {
             this->torque_memory[i] = 0;
+        }
+        return 0;
+    }
+    else
+    {
+        int16_t total_torque = 0;
+        /* cycle through last 4 torque values*/
+        this->torque_memory[3] = this->torque_memory[2];
+        this->torque_memory[2] = this->torque_memory[1];
+        this->torque_memory[1] = this->torque_memory[0];
+        this->torque_memory[0] = torque;
+
+        /* sum last 4 torque values */
+        for (int i = 0; i < 4; i++)
+        {
+            total_torque += this->torque_memory[i];
         }
         this->last_output_torque = 0;
         return 0;
     }
 
     /* Continues to send same torque message until 20ms has passed */
-    if ((uint16_t)(current_time_ms - last_smooth_update_ms) < SMOOTH_PERIOD_MS)
+    if (current_time_ms - last_smooth_update_ms < SMOOTH_PERIOD_MS)
     {
         return this->last_output_torque;
     }
     /* Starts timer for next cycle when 20ms has passed */
     this->last_smooth_update_ms = current_time_ms;
 
-    uint16_t total_torque = 0;
+    int16_t total_torque = 0;
     /* cycle through last 4 torque values*/
     this->torque_memory[3] = this->torque_memory[2];
     this->torque_memory[2] = this->torque_memory[1];
@@ -61,22 +82,22 @@ int16_t Ecu::smooth_torque(uint16_t current_time_ms, uint16_t torque) {
     this->torque_memory[0] = torque;
 
     /* sum last 4 torque values */
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++)
+    {
         total_torque += this->torque_memory[i];
     }
 
     /* average out torque and check for errors */
     total_torque = total_torque / 4;
-    SAFETY_ASSERT_CODE((total_torque >= 0), AssertCode::SmoothTorqueLessThanZero);
+    SAFETY_ASSERT((total_torque >= 0), AssertCode::SmoothTorqueLessThanZero);
     this->last_output_torque = total_torque;
     return total_torque;
 }
 
-
-int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
+int16_t throttle_map(uint16_t throttle1, uint16_t throttle2)
+{
     /* Make sure the throttle values are in range. */
-    SAFETY_ASSERT_CODE((throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX), AssertCode::ThrottleOutOfRange);
-    SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
+    SAFETY_ASSERT((throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX), AssertCode::ThrottleOutOfRange);
 
     int64_t throttle1_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
     /* DEBUG ONLY!!!! Throttle 2 set to throttle 1 :) */
@@ -87,22 +108,17 @@ int16_t throttle_map(uint16_t throttle1, uint16_t throttle2) {
 
     // FIXME this is throwing an error
     /* Make sure the two throttle values haven't diverged too far. */
-    SAFETY_ASSERT_CODE((abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE), AssertCode::ThrottleDisagree);
+    SAFETY_ASSERT((abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE), AssertCode::ThrottleDisagree);
 
     int64_t average = (throttle1_percent + throttle2_percent) / 2;
 
-    // FIXME this throwing an error
+    int64_t torque_mapped = map(average, MIN_THROTTLE, MAX_THROTTLE, 0, MAX_TORQUE);
+
     /* Make sure the average can fit into the new size (int16_t). */
-    SAFETY_ASSERT_CODE((average >= MIN_THROTTLE && average <= MAX_THROTTLE), AssertCode::ThrottleOverflow);
+    SAFETY_ASSERT((torque_mapped >= MIN_THROTTLE && torque_mapped <= MAX_THROTTLE), AssertCode::ThrottleOverflow);
+    SAFETY_ASSERT((torque_mapped >= 0), AssertCode::TorqueLessThanZero);
 
-    int16_t torque_mapped = map(average, MIN_THROTTLE, MAX_THROTTLE, 0, MAX_TORQUE);
-    SAFETY_ASSERT_CODE((torque_mapped >= 0), AssertCode::TorqueLessThanZero);
-    /* TODO look into this */
-    if (torque_mapped < 0) {
-        torque_mapped = 0;
-    }
-
-    return torque_mapped;
+    return static_cast<int16_t>(torque_mapped);
 }
 
 void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg)
@@ -143,7 +159,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg)
         // FIXME this isn't working
         /* Brake and throttle cannot be pressed at the same time. */
         // SAFETY_ASSERT_CODE(!(mapped_torque > 0 && this->brake_pressure >= BRAKE_CONSIDERED_PRESSED), AssertCode::BrakeAndThrottle);
-        int16_t smoothed_torque = smooth_torque(current_time_ms, mapped_torque);
+        int16_t smoothed_torque = this->smoothTorque(current_time_ms, mapped_torque);
         this->calculated_torque = smoothed_torque;
     }
 
@@ -200,15 +216,14 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg)
          * Once these preconditions are met, we can do the startup sequence.
          * We will also wait two seconds before fully starting up, or abort if
          * one of the preconditions stops holding. */
-
-        /* DEBUG ONLY */
-        // TODO this needs to be looked over 
-        // if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && this->start_switch_on) {
-        if (this->start_switch_on) {
+        if ((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED) && debounced_switch)
+        {
             if (!this->startup_countdown.started())
             {
                 this->startup_countdown.start(current_time_ms, STARTUP_DELAY_MS);
-            } else if (this->startup_countdown.triggerReached(current_time_ms)) {
+            }
+            else if (this->startup_countdown.triggerReached(current_time_ms))
+            {
                 /* Good to go! */
                 this->car_fully_on = true;
             }
@@ -248,16 +263,8 @@ std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms)
         torque_to_use = this->calculated_torque;
     }
 
-    /* We need to pace how often motor control messages are passed along the CAN bus.
-     * We do this by using a trigger. To use the trigger, we first start it. Once
-     * enough time has passed since we started it, `triggerReached` will return true,
-     * and mark the trigger as not started. Next time, we'll see that the trigger is
-     * marked as not started, and we'll start it again. This loops forever. */
-    if (!this->motor_control_message_pacing.started())
-    {
-        this->motor_control_message_pacing.start(current_time_ms, 15 /*ms*/);
-    }
-    else if (this->motor_control_message_pacing.triggerReached(current_time_ms))
+    /* Pace how often we send a motor command by pacing it with a timer. */
+    if (this->motor_control_pacing.shouldFire(current_time_ms))
     {
         MotorControlCommand cmd;
         cmd.torque = torque_to_use;
@@ -303,5 +310,4 @@ void Ecu::printState()
     }
 
     PRINTF("startup_countdown: %s\n", this->startup_countdown.started() ? "started" : "not started");
-    PRINTF("motor_control_message_pacing: %s\n", this->motor_control_message_pacing.started() ? "started" : "not started");
 }

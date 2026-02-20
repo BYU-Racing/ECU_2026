@@ -37,6 +37,7 @@ enum class AssertCode: uint8_t {
     TorqueLessThanZero = 4,
     SmoothTorqueLessThanZero = 5,
     ThrottleOverflow = 6,
+    BadMessage = 7,
 };
 
 enum class AssertLevel {
@@ -60,8 +61,5 @@ void assert_failed(AssertLevel level, const char* file, int line, AssertCode err
         } \
     } while (0)
 
-#define SOFT_ASSERT(condition)   GENERIC_ASSERT(AssertLevel::Soft, (condition), AssertCode::Unknown)
-#define SAFETY_ASSERT(condition) GENERIC_ASSERT(AssertLevel::Safety, (condition), AssertCode::Unknown)
-
-#define SOFT_ASSERT_CODE(condition, code)   GENERIC_ASSERT(AssertLevel::Soft, (condition), (code))
-#define SAFETY_ASSERT_CODE(condition, code) GENERIC_ASSERT(AssertLevel::Safety, (condition), (code))
+#define SOFT_ASSERT(condition, code)   GENERIC_ASSERT(AssertLevel::Soft, (condition), (code))
+#define SAFETY_ASSERT(condition, code) GENERIC_ASSERT(AssertLevel::Safety, (condition), (code))

@@ -17,7 +17,7 @@ public:
     std::optional<CAN_message_t> emitMessage(uint32_t current_time_ms);
 
     /* smooth torque */
-    int16_t smooth_torque(uint16_t current_time, uint16_t torque);
+    int16_t smoothTorque(uint32_t current_time, int16_t torque);
 
     /* Uses PRINTF for all printing. */
     void printState();
@@ -58,8 +58,8 @@ private:
      * wait 2 seconds before enabling the motor. This is that startup countdown. */
     Trigger startup_countdown;
 
-    /* Time since we last sent a motor control command. */
-    Trigger motor_control_message_pacing;
+    /* Timer to pace how often we send motor control commands. */
+    Timer motor_control_pacing = Timer(0, 15);
 
     /* throttle mapping memory */
     uint16_t torque_memory[4] = {0, 0, 0, 0};
