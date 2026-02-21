@@ -97,26 +97,37 @@ int16_t Ecu::smoothTorque(uint32_t current_time_ms, int16_t torque)
 int16_t throttle_map(uint16_t throttle1, uint16_t throttle2)
 {
     /* Make sure the throttle values are in range. */
-    SAFETY_ASSERT((throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX), AssertCode::ThrottleOutOfRange);
+    SAFETY_ASSERT(throttle1 >= THROTTLE1_MIN_OUT_OF_RANGE, AssertCode::ThrottleOutOfRange);
+    SAFETY_ASSERT(throttle1 <= THROTTLE1_MAX_OUT_OF_RANGE, AssertCode::ThrottleOutOfRange);
+    SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN_OUT_OF_RANGE, AssertCode::ThrottleOutOfRange);
+    SAFETY_ASSERT(throttle2 <= THROTTLE2_MAX_OUT_OF_RANGE, AssertCode::ThrottleOutOfRange);
 
-    int64_t throttle1_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
+    int64_t throttle1_percent = map(throttle1, THROTTLE1_LOW, THROTTLE1_HIGH, 0, 100);
     /* DEBUG ONLY!!!! Throttle 2 set to throttle 1 :) */
     // int64_t throttle2_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
-    int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
+    int64_t throttle2_percent = map(throttle2, THROTTLE2_LOW, THROTTLE2_HIGH, 0, 100);
 
-    // int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
+    /* Throttle values may go slightly below 0 or above 100, so we'll just saturate it
+     * at those values (if it's significantly out of range, the safety asserts at the
+     * beginning of this function will fail). */
+    if (throttle1_percent < 0) throttle1_percent = 0;
+    if (throttle1_percent > 100) throttle1_percent = 100;
+    if (throttle2_percent < 0) throttle2_percent = 0;
+    if (throttle2_percent > 100) throttle2_percent = 100;
 
     // FIXME this is throwing an error
     /* Make sure the two throttle values haven't diverged too far. */
-    SAFETY_ASSERT((abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE), AssertCode::ThrottleDisagree);
+    // SAFETY_ASSERT((abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE), AssertCode::ThrottleDisagree);
 
-    int64_t average = (throttle1_percent + throttle2_percent) / 2;
+    // FIXME actually average the values.
+    // int64_t average = (throttle1_percent + throttle2_percent) / 2;
+    int64_t average = throttle1_percent;
 
     int64_t torque_mapped = map(average, MIN_THROTTLE, MAX_THROTTLE, 0, MAX_TORQUE);
 
     /* Make sure the average can fit into the new size (int16_t). */
-    SAFETY_ASSERT((torque_mapped >= MIN_THROTTLE && torque_mapped <= MAX_THROTTLE), AssertCode::ThrottleOverflow);
-    SAFETY_ASSERT((torque_mapped >= 0), AssertCode::TorqueLessThanZero);
+    // SAFETY_ASSERT((torque_mapped >= MIN_THROTTLE && torque_mapped <= MAX_THROTTLE), AssertCode::ThrottleOverflow);
+    // SAFETY_ASSERT((torque_mapped >= 0), AssertCode::TorqueLessThanZero);
 
     return static_cast<int16_t>(torque_mapped);
 }

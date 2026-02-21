@@ -9,11 +9,17 @@ constexpr uint32_t SOFT_RESET_LENGTH_MS = 2000;
 constexpr long SERIAL_BAUD_RATE = 115200;
 constexpr uint32_t CAN_BAUD_RATE = 250000;
 
-constexpr int16_t THROTTLE1_MIN = 720;
-constexpr int16_t THROTTLE1_MAX = 995;
+/* THROTTLE1_LOW and THROTTLE1_HIGH can be reversed. */
+constexpr int16_t THROTTLE1_LOW = 255;
+constexpr int16_t THROTTLE1_HIGH = 35;
+constexpr int16_t THROTTLE1_MIN_OUT_OF_RANGE = 5;
+constexpr int16_t THROTTLE1_MAX_OUT_OF_RANGE = 290;
 
-constexpr int16_t THROTTLE2_MIN = 165;
-constexpr int16_t THROTTLE2_MAX = 180;
+/* THROTTLE2_LOW and THROTTLE2_HIGH can be reversed. */
+constexpr int16_t THROTTLE2_LOW = 162;
+constexpr int16_t THROTTLE2_HIGH = 177;
+constexpr int16_t THROTTLE2_MIN_OUT_OF_RANGE = 150;
+constexpr int16_t THROTTLE2_MAX_OUT_OF_RANGE = 190;
 
 /* Maximum allowed difference between the two throttles' values,
  * after those values have been mapped to [THROTTLE[X]_MIN, THROTTLE[X]_MAX]. */
