@@ -38,20 +38,21 @@ int16_t throttle_map(uint16_t throttle1, uint16_t throttle2)
     /* Make sure the throttle values are in range. */
 
     // FIXME this is throwing an error
-    // SAFETY_ASSERT(throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX);
+    // SAFETY_ASSERT_CODE((throttle1 >= THROTTLE1_MIN && throttle1 <= THROTTLE1_MAX), AssertCode::ThrottleOutOfRange);
     // SAFETY_ASSERT(throttle2 >= THROTTLE2_MIN && throttle2 <= THROTTLE2_MAX);
 
     int64_t throttle1_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
     /* DEBUG ONLY */
-    int64_t throttle2_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
+    // int64_t throttle2_percent = map(throttle1, THROTTLE1_MIN, THROTTLE1_MAX, 0, 100);
 
     // int64_t throttle2_percent = map(throttle2, THROTTLE2_MIN, THROTTLE2_MAX, 0, 100);
 
     // FIXME this is throwing an error
     /* Make sure the two throttle values haven't diverged too far. */
-    // SAFETY_ASSERT(abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE);
+    // SAFETY_ASSERT_CODE((abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE), AssertCode::ThrottleDisagree);
 
-    int64_t average = (throttle1_percent + throttle2_percent) / 2;
+    // int64_t average = (throttle1_percent + throttle2_percent) / 2;
+    int64_t average = throttle1_percent;
 
     // FIXME this throwing an error
     /* Make sure the average can fit into the new size (int16_t). */
@@ -59,7 +60,7 @@ int16_t throttle_map(uint16_t throttle1, uint16_t throttle2)
 
     int16_t torque_mapped = map(average, MIN_THROTTLE, MAX_THROTTLE, 0, MAX_TORQUE);
     // FIXME this isn't working
-    // SAFETY_ASSERT(torque_mapped >= 0);
+    SAFETY_ASSERT_CODE((torque_mapped >= 0), AssertCode::TorqueLessThanZero);
     if (torque_mapped < 0)
     {
         torque_mapped = 0;
@@ -225,7 +226,7 @@ std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms)
         MotorControlCommand cmd;
         cmd.torque = torque_to_use;
         cmd.speed = 0;
-        cmd.direction = MotorDirection::Reverse;
+        cmd.direction = MotorDirection::Forward;
         cmd.enable_inverter = inverter_enabled;
         cmd.inverter_discharge = false;
         cmd.override_speed = false;
@@ -267,4 +268,5 @@ void Ecu::printState()
 
     PRINTF("startup_countdown: %s\n", this->startup_countdown.started() ? "started" : "not started");
     PRINTF("motor_control_message_pacing: %s\n", this->motor_control_message_pacing.started() ? "started" : "not started");
+    SAFETY_ASSERT_CODE((this->brake_pressure >= BRAKE_CONSIDERED_PRESSED), AssertCode::Unknown);
 }

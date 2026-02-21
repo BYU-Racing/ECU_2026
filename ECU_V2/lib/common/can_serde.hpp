@@ -3,10 +3,12 @@
  */
 #pragma once
 
+#include "assert.hpp"
 #include "CAN_message_t.hpp"
 
 /* All the CAN messages with their associated IDs. */
-enum class MessageId: uint32_t {
+enum class MessageId : uint32_t
+{
     /* Sensor messages. */
     StartSwitch = 0,
     ThrottleOnePosition = 1,
@@ -86,40 +88,53 @@ enum class MessageId: uint32_t {
     ThrottleMax = 208,
 };
 
-enum class RvcType: uint8_t {
+enum class RvcType : uint8_t
+{
     XAccel = 0,
     YAccel = 1,
     ZAccel = 2,
-    XRot   = 3,
-    YRot   = 4,
-    ZRot   = 5,
+    XRot = 3,
+    YRot = 4,
+    ZRot = 5,
 };
 
-struct RvcMessage {
+struct RvcMessage
+{
     RvcType type;
     float value;
 };
 
-enum class TirePosition: uint8_t {
-    FrontLeft  = 0,
-    FrontRight = 1,
-    RearLeft   = 2,
-    RearRight  = 3,
+struct CriticalFault
+{
+    AssertCode error_code;
+    uint16_t assert_failure_line;
+    uint32_t file_name_hash;
 };
 
-struct TireRpmMessage {
+enum class TirePosition : uint8_t
+{
+    FrontLeft = 0,
+    FrontRight = 1,
+    RearLeft = 2,
+    RearRight = 3,
+};
+
+struct TireRpmMessage
+{
     TirePosition position;
     float value;
 };
 
-struct TireTemperatureMessage {
+struct TireTemperatureMessage
+{
     TirePosition position;
-    int16_t inner;  /* 1 = 0.1C */
-    int16_t outer;  /* 1 = 0.1C */
-    int16_t core;   /* 1 = 0.1C */
+    int16_t inner; /* 1 = 0.1C */
+    int16_t outer; /* 1 = 0.1C */
+    int16_t core;  /* 1 = 0.1C */
 };
 
-enum class LapMessage {
+enum class LapMessage
+{
     TrackFormed = 0,
     SectorOneTime = 1,
     SectorTwoTime = 2,
@@ -127,35 +142,40 @@ enum class LapMessage {
     LapTime = 4,
 };
 
-struct MotorTemperaturesOne {
-    int16_t phase_a_temp;      /* 1 = 0.1C */
-    int16_t phase_b_temp;      /* 1 = 0.1C */
-    int16_t phase_c_temp;      /* 1 = 0.1C */
-    int16_t gate_driver_temp;  /* 1 = 0.1C */
+struct MotorTemperaturesOne
+{
+    int16_t phase_a_temp;     /* 1 = 0.1C */
+    int16_t phase_b_temp;     /* 1 = 0.1C */
+    int16_t phase_c_temp;     /* 1 = 0.1C */
+    int16_t gate_driver_temp; /* 1 = 0.1C */
 };
 
-struct MotorTemperaturesTwo {
-    int16_t control_board_temp;    /* 1 = 0.1C */
-    int16_t rtd1;                  /* 1 = 0.1C */
-    int16_t rtd2;                  /* 1 = 0.1C */
-    int16_t rtd3;                  /* 1 = 0.1C */
+struct MotorTemperaturesTwo
+{
+    int16_t control_board_temp; /* 1 = 0.1C */
+    int16_t rtd1;               /* 1 = 0.1C */
+    int16_t rtd2;               /* 1 = 0.1C */
+    int16_t rtd3;               /* 1 = 0.1C */
 };
 
-struct MotorTemperaturesThree {
-    int16_t coolant_temp;      /* 1 = 0.1C */
-    int16_t hot_spot_temp;     /* 1 = 0.1C */
-    int16_t motor_temp;        /* 1 = 0.1C */
-    int16_t torque_shudder;    /* 1 = 0.1Nm */
+struct MotorTemperaturesThree
+{
+    int16_t coolant_temp;   /* 1 = 0.1C */
+    int16_t hot_spot_temp;  /* 1 = 0.1C */
+    int16_t motor_temp;     /* 1 = 0.1C */
+    int16_t torque_shudder; /* 1 = 0.1Nm */
 };
 
-struct MotorAnalogInputVoltages {
-    int16_t analog_input_one;      /* 1 = 0.01V */
-    int16_t analog_input_two;      /* 1 = 0.01V */
-    int16_t analog_input_three;    /* 1 = 0.01V */
-    int16_t analog_input_four;     /* 1 = 0.01V */
+struct MotorAnalogInputVoltages
+{
+    int16_t analog_input_one;   /* 1 = 0.01V */
+    int16_t analog_input_two;   /* 1 = 0.01V */
+    int16_t analog_input_three; /* 1 = 0.01V */
+    int16_t analog_input_four;  /* 1 = 0.01V */
 };
 
-struct MotorDigitalInputStatus {
+struct MotorDigitalInputStatus
+{
     bool forward_switch;
     bool reverse_switch;
     bool brake_switch;
@@ -166,42 +186,48 @@ struct MotorDigitalInputStatus {
     bool digital_input_eight;
 };
 
-struct MotorPositionInfo {
-    int16_t motor_angle;            /* 1 = 0.1° */
-    int16_t motor_speed;            /* RPM */
-    int16_t electrical_frequency;   /* 1 = 0.1Hz */
-    int16_t delta_resolver_angle;   /* 1 = 0.1Hz */
+struct MotorPositionInfo
+{
+    int16_t motor_angle;          /* 1 = 0.1° */
+    int16_t motor_speed;          /* RPM */
+    int16_t electrical_frequency; /* 1 = 0.1Hz */
+    int16_t delta_resolver_angle; /* 1 = 0.1Hz */
 };
 
-struct MotorCurrentInfo {
-    int16_t phase_a_current;    /* 1 = 0.1A */
-    int16_t phase_b_current;    /* 1 = 0.1A */
-    int16_t phase_c_current;    /* 1 = 0.1A */
-    int16_t dc_bus_current;     /* 1 = 0.1A */
+struct MotorCurrentInfo
+{
+    int16_t phase_a_current; /* 1 = 0.1A */
+    int16_t phase_b_current; /* 1 = 0.1A */
+    int16_t phase_c_current; /* 1 = 0.1A */
+    int16_t dc_bus_current;  /* 1 = 0.1A */
 };
 
-struct MotorVoltageInfo {
+struct MotorVoltageInfo
+{
     int16_t dc_bus_voltage; /* 1 = 0.1V */
     int16_t output_voltage; /* 1 = 0.1V */
     int16_t vab_voltage;    /* 1 = 0.1V */
     int16_t vbc_voltage;    /* 1 = 0.1V */
 };
 
-struct MotorFluxInfo {
-    int16_t flux_command;   /* mWb */
-    int16_t flux_feedback;  /* mWb */
-    int16_t id_feedback;    /* 1 = 0.1A */
-    int16_t iq_feedback;    /* 1 = 0.1A */
+struct MotorFluxInfo
+{
+    int16_t flux_command;  /* mWb */
+    int16_t flux_feedback; /* mWb */
+    int16_t id_feedback;   /* 1 = 0.1A */
+    int16_t iq_feedback;   /* 1 = 0.1A */
 };
 
-struct MotorInternalVoltages {
-    int16_t reference_1_5_v;    /* Reference 1.5V. 1 = 0.01V */
-    int16_t reference_2_5_v;    /* Reference 2.5V. 1 = 0.01V */
-    int16_t reference_5_0_v;    /* Reference 5.0V. 1 = 0.01V */
-    int16_t reference_12_v;     /* Reference 12V. 1 = 0.01V */
+struct MotorInternalVoltages
+{
+    int16_t reference_1_5_v; /* Reference 1.5V. 1 = 0.01V */
+    int16_t reference_2_5_v; /* Reference 2.5V. 1 = 0.01V */
+    int16_t reference_5_0_v; /* Reference 5.0V. 1 = 0.01V */
+    int16_t reference_12_v;  /* Reference 12V. 1 = 0.01V */
 };
 
-enum class VsmState: uint8_t {
+enum class VsmState : uint8_t
+{
     VsmStart = 0,
     PreChargeInit = 1,
     PreChargeActive = 2,
@@ -214,7 +240,8 @@ enum class VsmState: uint8_t {
     RecyclePower = 15,
 };
 
-enum class InverterState: uint8_t {
+enum class InverterState : uint8_t
+{
     PowerOn = 0,
     Stop = 1,
     OpenLoop = 2,
@@ -230,7 +257,8 @@ enum class InverterState: uint8_t {
     _Internal6 = 12,
 };
 
-struct RelayState {
+struct RelayState
+{
     bool relay_one;
     bool relay_two;
     bool relay_three;
@@ -239,12 +267,14 @@ struct RelayState {
     bool relay_six;
 };
 
-enum class InverterRunMode {
+enum class InverterRunMode
+{
     TorqueMode = 0,
     SpeedMode = 1,
 };
 
-enum class InverterActiveDischargeState {
+enum class InverterActiveDischargeState
+{
     DischargeDisabled = 0,
     DischargedEnabledAndWaiting = 1,
     PerformingSpeedCheck = 2,
@@ -252,22 +282,26 @@ enum class InverterActiveDischargeState {
     DischargeCompleted = 4,
 };
 
-enum class InverterCommandMode {
+enum class InverterCommandMode
+{
     CanMode = 0,
     VsmMode = 1,
 };
 
-enum class BurstModelMode {
+enum class BurstModelMode
+{
     Stall = 0,
     HighSpeed = 1,
 };
 
-enum class MotorDirection {
+enum class MotorDirection
+{
     Reverse = 0,
     Forward = 1,
 };
 
-struct MotorInternalStates {
+struct MotorInternalStates
+{
     VsmState vsm_state;
     uint8_t pwm_frequency; /* kHz */
     InverterState inverter_state;
@@ -279,10 +313,10 @@ struct MotorInternalStates {
     uint8_t rolling_counter_value;
     bool inverter_enable_state; /* false = not enabled, true = enabled. */
     BurstModelMode burst_model_mode;
-    bool start_mode_active; /* false = start signal not activated, true = activated. */
+    bool start_mode_active;       /* false = start signal not activated, true = activated. */
     bool inverter_enable_lockout; /* false = inverter can be enabled, true = can't be enabled. */
     MotorDirection direction_command;
-    bool bms_active; /* false = BMS message not being received, true is being received. */
+    bool bms_active;          /* false = BMS message not being received, true is being received. */
     bool bms_limiting_torque; /* false = torque not being limited by BMS, true = limited. */
 
     /* This value is currently available only in Gen 5/CM inverters and Gen 3 version 2042+:
@@ -309,7 +343,8 @@ struct MotorInternalStates {
     bool limit_stall_burst_model;
 };
 
-struct MotorFaultCodes {
+struct MotorFaultCodes
+{
     bool hardware_gate_or_desaturation_fault_first; /* For whatever reason the docs have two versions of this. */
     bool hardware_overcurrent_fault;
     bool accelerator_shorted;
@@ -386,7 +421,8 @@ struct MotorFaultCodes {
     bool reserved_bit_63;
 };
 
-struct MotorTorqueAndTimerInfo {
+struct MotorTorqueAndTimerInfo
+{
     int16_t commanded_torque;
     int16_t torque_feedback;
 
@@ -398,14 +434,16 @@ struct MotorTorqueAndTimerInfo {
 };
 
 /* Full title is Modulation Index & Flux Weakening Output Information */
-struct MotorModIndexAndFlux {
-    int16_t modulation_index; /* Assumed to be signed. */
+struct MotorModIndexAndFlux
+{
+    int16_t modulation_index;      /* Assumed to be signed. */
     int16_t flux_weakening_output; /* This is the current output of the flux regulator. 1 = 0.1A */
-    int16_t id_command; /* The commanded D-axis current. 1 = 0.1A */
-    int16_t iq_command; /* The commanded Q-axis current. 1 = 0.1A */
+    int16_t id_command;            /* The commanded D-axis current. 1 = 0.1A */
+    int16_t iq_command;            /* The commanded Q-axis current. 1 = 0.1A */
 };
 
-struct MotorControlCommand {
+struct MotorControlCommand
+{
     int16_t torque; /* 1 = 0.1Nm. */
     int16_t speed;  /* RPM */
     MotorDirection direction;
@@ -425,12 +463,12 @@ struct MotorControlCommand {
 };
 
 CAN_message_t empty_can_message(MessageId id, uint8_t len);
-uint16_t read_u16_le(uint8_t* buf);
-void write_u16_le(uint8_t* buf, uint16_t value);
-uint32_t read_u32_le(const uint8_t* buf);
-void write_u32_le(uint8_t* buf, uint32_t value);
-float read_f32_le(uint8_t* buf);
-void write_f32_le(uint8_t* buf, float value);
+uint16_t read_u16_le(uint8_t *buf);
+void write_u16_le(uint8_t *buf, uint16_t value);
+uint32_t read_u32_le(const uint8_t *buf);
+void write_u32_le(uint8_t *buf, uint32_t value);
+float read_f32_le(uint8_t *buf);
+void write_f32_le(uint8_t *buf, float value);
 
 bool parse_start_switch(CAN_message_t msg);
 CAN_message_t create_start_switch(bool value);
@@ -448,6 +486,7 @@ TireTemperatureMessage parse_tire_temperature(CAN_message_t msg);
 CAN_message_t create_tire_temperature(TireTemperatureMessage value);
 LapMessage parse_lap(CAN_message_t msg);
 CAN_message_t create_lap(LapMessage value);
+CAN_message_t create_critical_fault_command(CriticalFault value);
 
 MotorTemperaturesOne parse_motor_temperatures_one(CAN_message_t msg);
 MotorTemperaturesTwo parse_motor_temperatures_two(CAN_message_t msg);

@@ -6,10 +6,10 @@
 constexpr long SERIAL_BAUD_RATE = 115200;
 constexpr uint32_t CAN_BAUD_RATE = 250000;
 
-constexpr int16_t THROTTLE1_MIN = 720;
-constexpr int16_t THROTTLE1_MAX = 995;
+constexpr int16_t THROTTLE1_MIN = 250;
+constexpr int16_t THROTTLE1_MAX = 35;
 
-constexpr int16_t THROTTLE2_MIN = 165;
+constexpr int16_t THROTTLE2_MIN = 160;
 constexpr int16_t THROTTLE2_MAX = 180;
 
 /* Maximum allowed difference between the two throttles' values,
@@ -30,7 +30,7 @@ constexpr int16_t BRAKE_CONSIDERED_PRESSED = 20;
 
 
 constexpr uint32_t STARTUP_DELAY_MS = 2000;  /* 2 seconds */
-`
+
 constexpr int16_t TORQUE_FLOOR = 10;
 /* MAX TORQUE VALUE */
 // 50 Nm 
