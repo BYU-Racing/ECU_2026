@@ -8,7 +8,7 @@
 #include "assert.hpp"
 #include "util.hpp"
 #include "can_serde.hpp"
-#include "ecu.hpp"
+#include "ecu_logic.hpp"
 
 using namespace std;
 

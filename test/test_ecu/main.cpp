@@ -8,7 +8,7 @@
 #include "constants.hpp"
 #include "assert.hpp"
 #include "can_serde.hpp"
-#include "ecu.hpp"
+#include "ecu_logic.hpp"
 
 void setUp(void) {}
 

@@ -1,5 +1,0 @@
-# Project-specific libraries
-
-This folder contains code that's specific to this project, but is general enough we want to keep it out of the main `src` folder. The other really nice thing about this is we can test any code that's in `lib`, which is really helpful for making sure the CAN parser works correctly.
-
-Right now, there's only two things in this folder—`can_serde.hpp` and `assert.hpp`. `assert.hpp` provides the `SAFETY_ASSERT` macro, which is used to make ensure certain invariants, such as message format or sensor reading. If `SAFETY_ASSERT` ever fails, it will run the chip's wind down code, so that if something gets out of whack we safely fail. `can_serde.hpp` takes care of generating and parsing can messages, so they're easier to work with.
