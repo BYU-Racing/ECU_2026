@@ -52,6 +52,7 @@ int16_t throttle_map(uint16_t throttle1, uint16_t throttle2)
     // SAFETY_ASSERT_CODE((abs(throttle1_percent - throttle2_percent) < THROTTLE_DISAGREE), AssertCode::ThrottleDisagree);
 
     // int64_t average = (throttle1_percent + throttle2_percent) / 2;
+    // FIXME throttle 2 is not working !!! 
     int64_t average = throttle1_percent;
 
     // FIXME this throwing an error
