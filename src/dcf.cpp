@@ -28,20 +28,12 @@ constexpr uint32_t SWITCH_INTERVAL = 100;
 
 DigitalSensor startSwitch = DigitalSensor(ReservedIDs::StartSwitchId, SWITCH_CRITICALITY, SWITCH_PIN, SWITCH_INTERVAL);
 
-
-constexpr bool DATA_CRITICALITY = false;
-constexpr uint8_t DATA_PIN = 13; // TBD
-constexpr uint32_t DATA_INTERVAL = 100;
-
-DigitalSensor dataSwitch = DigitalSensor(ReservedIDs::DataSwitchId, DATA_CRITICALITY, DATA_PIN, DATA_INTERVAL);
-
-constexpr size_t NUM_SENSORS = 5;
+constexpr size_t NUM_SENSORS = 4;
 Sensor* SENSORS[] = {
     &throttle1,
     &throttle2,
     &brake,
     &startSwitch,
-    &dataSwitch,
 };
 constexpr bool DEBUG = false;
 FlexCAN_T4<CAN1, RX_SIZE_256> motorCAN;
