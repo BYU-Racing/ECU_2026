@@ -3,7 +3,6 @@
 
 #include "DigitalSensor.h"
 #include "AnalogSensor.h"
-#include "DataCollector.h"
 
 constexpr bool THROTTLE_1_CRITICALITY = true;
 constexpr uint8_t THROTTLE_1_PIN = 18;
@@ -28,32 +27,77 @@ constexpr uint32_t SWITCH_INTERVAL = 100;
 
 DigitalSensor startSwitch = DigitalSensor(ReservedIDs::StartSwitchId, SWITCH_CRITICALITY, SWITCH_PIN, SWITCH_INTERVAL);
 
-constexpr size_t NUM_SENSORS = 4;
-Sensor* SENSORS[] = {
+Sensor *SENSORS[] = {
     &throttle1,
     &throttle2,
     &brake,
     &startSwitch,
 };
+constexpr size_t NUM_SENSORS = sizeof(SENSORS) / sizeof(SENSORS[0]);
 constexpr bool DEBUG = false;
 FlexCAN_T4<CAN1, RX_SIZE_256> motorCAN;
 FlexCAN_T4<CAN2, RX_SIZE_256> dataCAN;
 
-DataCollector dc = DataCollector(ReservedIDs::DCFId, NUM_SENSORS, SENSORS, DEBUG);
-
 constexpr uint32_t CAN_BAUD_RATE = 250000;
-constexpr uint32_t SERIAL_BAUD_RATE = 9600;
+constexpr uint32_t SERIAL_BAUD_RATE = 115200;
 
-void setup() {
+void setup()
+{
     Serial.begin(SERIAL_BAUD_RATE);
     motorCAN.begin();
     motorCAN.setBaudRate(CAN_BAUD_RATE);
     dataCAN.begin();
     dataCAN.setBaudRate(CAN_BAUD_RATE);
-    dc.begin(&motorCAN, &dataCAN);
     Serial.println("START");
 }
 
-void loop() {
-    dc.checkSensors();
+void sensorHealthCheck() {
+    Health status[NUM_SENSORS];
+    for (size_t sensorIndex = 0; sensorIndex < NUM_SENSORS; sensorIndex++)
+    {
+        status[sensorIndex] = SENSORS[sensorIndex]->healthCheck();
+    }
+    CAN_message_t healthMsg;
+    healthMsg.id = ReservedIDs::DCFId;
+    healthMsg.len = NUM_SENSORS;
+    /* We currently can only report up to 8 statuses, since we only
+     * use a single message. */
+    static_assert(NUM_SENSORS <= 8);
+    for (size_t i = 0; i < NUM_SENSORS; i++)
+    {
+        healthMsg.buf[i] = status[i];
+    }
+    dataCAN.write(healthMsg);
+}
+
+void processSensors() {
+    for (size_t i = 0; i < NUM_SENSORS; i++)
+    {
+        Sensor *sensor = SENSORS[i];
+        if (sensor->ready())
+        {
+            const SensorData data = sensor->read();
+            const CAN_message_t *msgs = data.getMsgs();
+            for (size_t msgIndex = 0; msgIndex < data.getMsgCount(); msgIndex++)
+            {
+                if (sensor->isCritical())
+                {
+                    motorCAN.write(msgs[msgIndex]);
+                }
+                else
+                {
+                    dataCAN.write(msgs[msgIndex]);
+                }
+                if (DEBUG)
+                {
+                    sensor->debugPrint(msgs[msgIndex]);
+                }
+            }
+        }
+    }
+}
+
+void loop()
+{
+    processSensors();
 }
