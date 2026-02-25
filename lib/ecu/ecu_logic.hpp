@@ -17,7 +17,9 @@ public:
     std::optional<CAN_message_t> emitMessage(uint32_t current_time_ms);
 
     /* smooth torque */
-    int16_t smoothTorque(uint32_t current_time, int16_t torque);
+    int16_t smoothTorque(uint32_t current_time);
+
+    void handleStartupSequence(uint32_t current_time_ms);
 
     /* Uses PRINTF for all printing. */
     void printState();
@@ -51,6 +53,9 @@ private:
     /* How far the brake is pressed down. */
     uint16_t brake_pressure = BRAKE_PRESSURE_MIN;
 
+    /* The current mapped torque, pre-smoothing. */
+    int16_t mapped_torque = 0;
+
     /* Calculated torque is sent directly to the motor. */
     int16_t calculated_torque = 0;
 
@@ -63,9 +68,7 @@ private:
 
     /* throttle mapping memory */
     uint16_t torque_memory[4] = {0, 0, 0, 0};
-
-    /* TIMING VARIABLES TO ENHANCE FUNCTION */
-    uint16_t last_output_torque = 0;
-    uint32_t last_smooth_update_ms = 0;
+    /* We only shift to the next value in torque_memory every 20ms. */
+    Timer torque_memory_pacing = Timer(0, 20);
 
 };

@@ -31,9 +31,9 @@ void safety_assert_failed_handler(AssertLevel level, const char *file, int line,
     }
 }
 
-void test_can_msg_eql(CAN_message_t msg, MessageId id, uint8_t buf[8]) {
+void test_can_msg_eql(CAN_message_t msg, MessageId id, uint8_t *buf, size_t len) {
     TEST_ASSERT(msg.id == static_cast<uint32_t>(id));
-    TEST_ASSERT(memcmp(&msg.buf, &buf, 8));
+    TEST_ASSERT(memcmp(&msg.buf, buf, len) == 0);
 }
 
 std::tuple<Ecu, uint32_t> ecu_after_startup_sequence() {
@@ -45,7 +45,7 @@ std::tuple<Ecu, uint32_t> ecu_after_startup_sequence() {
     TEST_ASSERT(ecu.emitMessage(current_time_ms) == std::nullopt);
 
     /* Let's let it know that the brake is down and that the switch is on. */
-    ecu.processMessage(current_time_ms, create_brake_pressure(80));
+    ecu.processMessage(current_time_ms, create_brake_pressure(BRAKE_CONSIDERED_PRESSED));
     ecu.processMessage(current_time_ms, create_start_switch(true));
 
     /* However, we still should not emit a motor command, since the car still isn't on. */
@@ -54,13 +54,10 @@ std::tuple<Ecu, uint32_t> ecu_after_startup_sequence() {
     /* 2 seconds later... */
     current_time_ms += 2000;
     /* Now we should be generating a motor command. */
-    /*                                                   forward vv    vv enabled */
-    uint8_t enabled_but_no_torque[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00};
-    test_can_msg_eql(
-        ecu.emitMessage(current_time_ms).value(), /* `.value()` will throw if std::nullopt. */
-        MessageId::ControlCommand,
-        enabled_but_no_torque
-    );
+    /*                                                   reverse vv    vv enabled */
+    uint8_t enabled_but_no_torque[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00};
+    auto val = ecu.emitMessage(current_time_ms).value(); /* `.value()` will throw if std::nullopt. */
+    test_can_msg_eql(val, MessageId::ControlCommand, enabled_but_no_torque, 8);
     /* We shouldn't get anything after the motor command. */
     TEST_ASSERT(ecu.emitMessage(current_time_ms) == std::nullopt);
 
@@ -78,10 +75,10 @@ void test_ecu() {
     TEST_ASSERT(ecu.emitMessage(current_time_ms) == std::nullopt);
     current_time_ms += 10;
 
-    /*                                       forward vv    vv enabled */
-    uint8_t enabled_but_no_torque[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00};
+    /*                                                  backward vv    vv enabled */
+    uint8_t enabled_but_no_torque[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00};
     /* We should get the enabled message without torque, since we haven't put down the throttle. */
-    test_can_msg_eql(ecu.emitMessage(current_time_ms).value(), MessageId::ControlCommand, enabled_but_no_torque);
+    test_can_msg_eql(ecu.emitMessage(current_time_ms).value(), MessageId::ControlCommand, enabled_but_no_torque, 8);
     TEST_ASSERT(ecu.emitMessage(current_time_ms) == std::nullopt);
 
     /* Let's input throttle one. */
@@ -89,7 +86,7 @@ void test_ecu() {
     current_time_ms += 20;
 
     /* The message still shouldn't change, since both throttles need to change. */
-    test_can_msg_eql(ecu.emitMessage(current_time_ms).value(), MessageId::ControlCommand, enabled_but_no_torque);
+    test_can_msg_eql(ecu.emitMessage(current_time_ms).value(), MessageId::ControlCommand, enabled_but_no_torque, 8);
     TEST_ASSERT(ecu.emitMessage(current_time_ms) == std::nullopt);
 
     /* Now input throttle two. Note: this should cause a safety violation since you're not allowed to have
@@ -106,14 +103,15 @@ void test_ecu() {
 
     /* Lift the brake this time, before putting down the throttle. */
     ecu.processMessage(current_time_ms, create_brake_pressure(BRAKE_PRESSURE_MIN));
-    ecu.processMessage(current_time_ms, create_throttle_one_position(50));
-    ecu.processMessage(current_time_ms, create_throttle_two_position(22));
+    ecu.processMessage(current_time_ms, create_throttle_one_position(64));
+    ecu.processMessage(current_time_ms, create_throttle_two_position(175));
     current_time_ms += 20;
 
     /* Because the ECU has started, and the throttle is down, we should now get a torque command. */
-    /*  torque amount (lower byte, le) vv              forward vv    vv enabled */
-    uint8_t enabled_with_torque[] = {  31, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00};
-    test_can_msg_eql(ecu.emitMessage(current_time_ms).value(), MessageId::ControlCommand, enabled_with_torque);
+    /* torque amount (lower byte, le) vv            backward vv    vv enabled */
+    uint8_t enabled_with_torque[] = {  0, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00};
+    auto val = ecu.emitMessage(current_time_ms).value();
+    test_can_msg_eql(val, MessageId::ControlCommand, enabled_with_torque, 8);
     TEST_ASSERT(ecu.emitMessage(current_time_ms) == std::nullopt);
 }
 
@@ -189,7 +187,7 @@ int main() {
     register_assert_failed_handler(safety_assert_failed_handler);
 
     UNITY_BEGIN();
-    // RUN_TEST(test_ecu);
+    RUN_TEST(test_ecu);
     RUN_TEST(test_switch_debounce);
     UNITY_END();
 }
