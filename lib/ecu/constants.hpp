@@ -10,8 +10,8 @@ constexpr long SERIAL_BAUD_RATE = 115200;
 constexpr uint32_t CAN_BAUD_RATE = 250000;
 
 /* THROTTLE1_LOW and THROTTLE1_HIGH can be reversed. */
-constexpr int16_t THROTTLE1_LOW = 250;
-constexpr int16_t THROTTLE1_HIGH = 30;
+constexpr int16_t THROTTLE1_LOW = 255;
+constexpr int16_t THROTTLE1_HIGH = 35;
 constexpr int16_t THROTTLE1_MIN_OUT_OF_RANGE = 5;
 constexpr int16_t THROTTLE1_MAX_OUT_OF_RANGE = 290;
 
@@ -42,11 +42,11 @@ constexpr int16_t BRAKE_CONSIDERED_PRESSED = 20;
 
 constexpr uint32_t STARTUP_DELAY_MS = 2000;  /* 2 seconds */
 
-constexpr int16_t TORQUE_FLOOR =10;
+constexpr int16_t TORQUE_FLOOR = 10;
 
 /* MAX TORQUE */
 /* N * 0.1 */
-constexpr int16_t MAX_TORQUE = 200;
+constexpr int16_t MAX_TORQUE = 500;
  
 /* Drive Modes */
 constexpr int8_t DRIVE_MODE = 0;
