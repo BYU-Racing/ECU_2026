@@ -1,3 +1,4 @@
+
 #include "ecu_logic.hpp"
 
 #include <cmath>
@@ -56,7 +57,7 @@ int16_t Ecu::smoothTorque(uint32_t current_time_ms)
         this->torque_memory[3] = this->torque_memory[2];
         this->torque_memory[2] = this->torque_memory[1];
         this->torque_memory[1] = this->torque_memory[0];
-        this->torque_memory[0] = torque;
+        this->torque_memory[0] = this->mapped_torque;
 
         /* sum last 4 torque values */
         for (int i = 0; i < 4; i++)
@@ -68,7 +69,7 @@ int16_t Ecu::smoothTorque(uint32_t current_time_ms)
     }
 
     /* Continues to send same torque message until 20ms has passed */
-    if (current_time_ms - last_smooth_update_ms < SMOOTH_PERIOD_MS)
+    if (current_time_ms - this->last_smooth_update_ms < SMOOTH_PERIOD_MS)
     {
         return this->last_output_torque;
     }
@@ -80,7 +81,7 @@ int16_t Ecu::smoothTorque(uint32_t current_time_ms)
     this->torque_memory[3] = this->torque_memory[2];
     this->torque_memory[2] = this->torque_memory[1];
     this->torque_memory[1] = this->torque_memory[0];
-    this->torque_memory[0] = torque;
+    this->torque_memory[0] = mapped_torque;
 
     /* sum last 4 torque values */
     for (int i = 0; i < 4; i++)
@@ -91,6 +92,7 @@ int16_t Ecu::smoothTorque(uint32_t current_time_ms)
     int16_t averaged = static_cast<int16_t>(total_torque / 4);
     SAFETY_ASSERT(averaged >= 0, AssertCode::SmoothTorqueLessThanZero);
 
+    this->last_output_torque = averaged;
     return averaged;
 }
 

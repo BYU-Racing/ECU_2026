@@ -68,6 +68,9 @@ private:
 
     /* throttle mapping memory */
     uint16_t torque_memory[4] = {0, 0, 0, 0};
+    uint16_t last_output_torque = 0;
+    uint32_t last_smooth_update_ms = 0;
+
     /* We only shift to the next value in torque_memory every 20ms. */
     Timer torque_memory_pacing = Timer(0, 20);
 
