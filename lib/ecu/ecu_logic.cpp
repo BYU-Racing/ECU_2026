@@ -46,31 +46,37 @@ int16_t Ecu::smoothTorque(uint32_t current_time_ms, int16_t torque)
         {
             this->torque_memory[i] = 0;
         }
-        return 0;
-    }
-    else
-    {
-        int16_t total_torque = 0;
-        /* cycle through last 4 torque values*/
-        this->torque_memory[3] = this->torque_memory[2];
-        this->torque_memory[2] = this->torque_memory[1];
-        this->torque_memory[1] = this->torque_memory[0];
-        this->torque_memory[0] = torque;
-
-        /* sum last 4 torque values */
-        for (int i = 0; i < 4; i++)
-        {
-            total_torque += this->torque_memory[i];
-        }
         this->last_output_torque = 0;
         return 0;
     }
 
-    /* Continues to send same torque message until 20ms has passed */
-    if (current_time_ms - last_smooth_update_ms < SMOOTH_PERIOD_MS)
-    {
+    if (current_time_ms - last_smooth_update_ms < SMOOTH_PERIOD_MS) {
         return this->last_output_torque;
     }
+
+    // else
+    // {
+    //     int16_t total_torque = 0;
+    //     /* cycle through last 4 torque values*/
+    //     this->torque_memory[3] = this->torque_memory[2];
+    //     this->torque_memory[2] = this->torque_memory[1];
+    //     this->torque_memory[1] = this->torque_memory[0];
+    //     this->torque_memory[0] = torque;
+
+    //     /* sum last 4 torque values */
+    //     for (int i = 0; i < 4; i++)
+    //     {
+    //         total_torque += this->torque_memory[i];
+    //     }
+    //     this->last_output_torque = 0;
+    //     return 0;
+    // }
+
+    /* Continues to send same torque message until 20ms has passed */
+    // if (current_time_ms - last_smooth_update_ms < SMOOTH_PERIOD_MS)
+    // {
+    //     return this->last_output_torque;
+    // }
     /* Starts timer for next cycle when 20ms has passed */
     this->last_smooth_update_ms = current_time_ms;
 
@@ -255,7 +261,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg)
 
 std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms)
 {
-    bool inverter_enabled = false;
+    bool inverter_enabled = true;
 
     /* Engine is enabled if all the preconditions of `car_fully_on` passed,
      * and if the brake is up. We don't enable the inverter until the
