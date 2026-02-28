@@ -46,7 +46,7 @@ constexpr int16_t TORQUE_FLOOR = 10;
 
 /* MAX TORQUE */
 /* N * 0.1 */
-constexpr int16_t MAX_TORQUE = 500;
+constexpr int16_t MAX_TORQUE = 1000;
  
 /* Drive Modes */
 constexpr int8_t DRIVE_MODE = 0;
