@@ -86,16 +86,19 @@ void assert_failed_handler(AssertLevel level, const char* file, int line, Assert
 void setup() {
   // First things first, register the panic handler. If something goes
     // wrong during setup, we'll wind everything down.
-    // FIXME this broken, car won't start up so I commented out
-  register_assert_failed_handler(assert_failed_handler);
-  Serial.begin(SERIAL_BAUD_RATE);
+    register_assert_failed_handler(assert_failed_handler);   
 
-  MotorCAN.begin();
-  MotorCAN.setBaudRate(CAN_BAUD_RATE);
+    /* Delay to hopefully stop voltage spikes from changing the throttle values*/
+    delay(2000);
 
-  Serial.println("============================================");
-  Serial.println("==========Motor CAN initialized=============");
-  Serial.println("============================================");
+    Serial.begin(SERIAL_BAUD_RATE);
+
+    MotorCAN.begin();
+    MotorCAN.setBaudRate(CAN_BAUD_RATE);
+
+    Serial.println("============================================");
+    Serial.println("==========Motor CAN initialized=============");
+    Serial.println("============================================");
 }
 
 /* This is used to periodically send state updates with the contents of ECU. */
