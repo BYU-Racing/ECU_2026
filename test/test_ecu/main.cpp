@@ -17,7 +17,7 @@ void tearDown(void) {}
 /* Needs to be volatile since the unity test framework uses `longjmp`. */
 volatile bool expecting_safety_violation = false;
 volatile bool hit_safety_violation = false;
-void safety_assert_failed_handler(AssertLevel level, const char *file, int line, AssertCode error_code) {
+void safety_assert_failed_handler(AssertLevel level, LineInfo info, AssertCode error_code) {
     UNUSED(level);
 
     if (expecting_safety_violation) {
@@ -26,7 +26,7 @@ void safety_assert_failed_handler(AssertLevel level, const char *file, int line,
         /* If an SAFETY_ASSERT fails somewhere in the code, this will let the testing environment
         * know that we failed the test. */
         std::stringstream fail_msg;
-        fail_msg << "Assert failed at " << file << ":" << line << " with code " << static_cast<uint8_t>(error_code);
+        fail_msg << "Assert failed at " << info.filename << ":" << info.line_no << " with code " << static_cast<uint8_t>(error_code);
         TEST_FAIL_MESSAGE(fail_msg.str().c_str());
     }
 }

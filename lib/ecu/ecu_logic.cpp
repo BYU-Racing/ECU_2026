@@ -1,6 +1,7 @@
 #include "ecu_logic.hpp"
 
 #include <cmath>
+#include <string.h>
 
 #include "assert.hpp"
 #include "can_serde.hpp"
@@ -78,6 +79,10 @@ void Pedals::inputThrottleTwoPosition(uint32_t current_time_ms, uint16_t value) 
 }
 
 void Pedals::inputBrakePosition(uint32_t current_time_ms, uint16_t position) {
+    /* This argument isn't strictly necessary, but we may use it in the future
+     * (the (void) just keeps the compiler from complaining). */
+    (void)current_time_ms;
+
     this->brake_pos = position;
     this->too_long_since_brake.cancel();
 }
@@ -171,7 +176,7 @@ int16_t Pedals::smoothThrottle(uint32_t current_time_ms) {
 
     int32_t total_torque = 0;
     /* Sum up history. */
-    for (int i = 0; i < torque_memory_len; i++) {
+    for (size_t i = 0; i < torque_memory_len; i++) {
         total_torque += torque_memory[i];
     }
 

@@ -52,7 +52,7 @@ struct LineInfo {
     int line_no;
 };
 
-#define CAPTURE_LINE_INFO() ((LineInfo) { __FILE__, __LINE__ })
+#define CAPTURE_LINE_INFO() (LineInfo{ __FILE__, __LINE__ })
 
 /* Allows for soft assertion, for things that aren't safety-critical, but should
  * be noted. These are elevated to safety asserts in production builds. */
