@@ -6,6 +6,7 @@
 class Trigger {
 public:
     void start(uint32_t current_time_ms, uint32_t target_duration);
+    void startIfStopped(uint32_t current_time_ms, uint32_t target_duration);
     bool started();
     void primeTrigger(uint32_t current_time_ms);
     bool triggerReached(uint32_t current_time_ms);
@@ -37,3 +38,4 @@ private:
 #define UNUSED(x) ((void)x)
 
 uint32_t str_hash(const char *str);
+int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t new_min_32, int32_t new_max_32);

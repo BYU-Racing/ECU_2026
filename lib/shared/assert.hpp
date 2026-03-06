@@ -38,26 +38,42 @@ enum class AssertCode: uint8_t {
     SmoothTorqueLessThanZero = 5,
     ThrottleOverflow = 6,
     BadMessage = 7,
+    /* If it's been too long since we've received a pedal value, we panic.
+     * T.4.2.11(b) 2026 rules */
+    PedalTimeout = 8,
+    IntegerOverflow = 9,
 };
 
+/* Captures the filename and file. I wish I could do this without a macro,
+ * but there's no other way to capture the line number without a macro,
+ * since we don't have stack traces. */
+struct LineInfo {
+    const char* filename;
+    int line_no;
+};
+
+#define CAPTURE_LINE_INFO() ((LineInfo) { __FILE__, __LINE__ })
+
+/* Allows for soft assertion, for things that aren't safety-critical, but should
+ * be noted. These are elevated to safety asserts in production builds. */
 enum class AssertLevel {
     Soft,
     Safety,
 };
 
 /* This is the function type for the panic handler. */
-typedef void (*assert_failed_handler_t)(AssertLevel level, const char* file, int line, AssertCode error_code);
+typedef void (*assert_failed_handler_t)(AssertLevel level, LineInfo line_info, AssertCode error_code);
 
 /* Call this to set what the code should do if an assertion fails. */
 void register_assert_failed_handler(assert_failed_handler_t handler);
 
 /* Calls the registered assert failure handler. */
-void assert_failed(AssertLevel level, const char* file, int line, AssertCode error_code);
+void assert_failed(AssertLevel level, LineInfo line_info, AssertCode error_code);
 
 #define GENERIC_ASSERT(level, condition, code) \
     do { \
         if (!(condition)) { \
-            assert_failed((level), __FILE__, __LINE__, (code)); \
+            assert_failed((level), CAPTURE_LINE_INFO(), (code)); \
         } \
     } while (0)
 

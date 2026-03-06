@@ -5,6 +5,12 @@ void Trigger::start(uint32_t current_time_ms, uint32_t duration) {
     target_duration = duration;
 }
 
+void Trigger::startIfStopped(uint32_t current_time_ms, uint32_t duration) {
+    if (!this->started()) {
+        this->start(current_time_ms, duration);
+    }
+}
+
 bool Trigger::started() {
     return started_at.has_value();
 }
@@ -69,4 +75,30 @@ uint32_t str_hash(const char *str) {
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
 
     return hash;
+}
+
+/* Generic function to remap one numerical range to another. */
+int64_t map(int32_t input_32, int32_t old_min_32, int32_t old_max_32, int32_t new_min_32, int32_t new_max_32) {
+    if (old_min_32 == old_max_32 || new_min_32 == new_max_32) {
+        /* Avoid division by zero. */
+        return 0;
+    }
+
+    /* Widen all values to 64-bit ints to avoid any issues with integer overflow. */
+    int64_t input = input_32;
+    int64_t old_min = old_min_32;
+    int64_t old_max = old_max_32;
+    int64_t new_min = new_min_32;
+    int64_t new_max = new_max_32;
+
+    int64_t old_difference = old_max - old_min;
+    int64_t new_difference = new_max - new_min;
+
+    int64_t input_at_origin = input - old_min;
+    /* Why not `(input_at_origin / old_difference) * new_difference`? Because
+     * integer division floors, so we'd lose a lot of precision. */
+    int64_t output_at_origin = (input_at_origin * new_difference) / old_difference;
+    int64_t output_shifted = output_at_origin + new_min;
+
+    return output_shifted;
 }

@@ -9,15 +9,27 @@ constexpr uint32_t SOFT_RESET_LENGTH_MS = 2000;
 constexpr long SERIAL_BAUD_RATE = 115200;
 constexpr uint32_t CAN_BAUD_RATE = 250000;
 
+/* Throttle constants */
+
+/* How long we tolerate between receiving pedal values until we panic. */
+constexpr uint32_t PEDAL_TIMEOUT_MS = 200;
+/* How long an implausibility is allowed to last before panicking.
+ * Set to 100 ms according to the 2026 SAE rules, section T.4.2.5 */
+constexpr uint32_t ALLOWED_IMPLAUSILIBTY_LENGTH_MS = 100;
+
 /* THROTTLE1_LOW and THROTTLE1_HIGH can be reversed. */
 constexpr int16_t THROTTLE1_LOW = 240;
 constexpr int16_t THROTTLE1_HIGH = 35;
+/* If the throttle 1 values is lower or higher than this range, we panic.
+ * Used to comply with T.4.2.10. */
 constexpr int16_t THROTTLE1_MIN_OUT_OF_RANGE = 5;
 constexpr int16_t THROTTLE1_MAX_OUT_OF_RANGE = 290;
 
 /* THROTTLE2_LOW and THROTTLE2_HIGH can be reversed. */
 constexpr int16_t THROTTLE2_LOW = 162;
 constexpr int16_t THROTTLE2_HIGH = 177;
+/* If the throttle 2 values is lower or higher than this range, we panic.
+ * Used to comply with T.4.2.10. */
 constexpr int16_t THROTTLE2_MIN_OUT_OF_RANGE = 150;
 constexpr int16_t THROTTLE2_MAX_OUT_OF_RANGE = 190;
 
