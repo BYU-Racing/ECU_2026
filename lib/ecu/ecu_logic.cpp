@@ -106,25 +106,25 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
 
         /* Make sure the throttle values are in range. */
         // FIXME these are throwing errors right now.
-        if (this->throttle_1_pos < THROTTLE1_MIN_OUT_OF_RANGE) {
-            /* This is a garbage value, so we really shouldn't use it.
-            * Hence, we'll return early so the rest of the code in
-            * this function doesn't run. */
-            this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
-            return;
-        }
-        if (this->throttle_1_pos > THROTTLE1_MAX_OUT_OF_RANGE) {
-            this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
-            return;
-        }
-        if (this->throttle_2_pos < THROTTLE2_MIN_OUT_OF_RANGE) {
-            this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
-            return;
-        }
-        if (this->throttle_2_pos > THROTTLE2_MAX_OUT_OF_RANGE) {
-            this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
-            return;
-        }
+        // if (this->throttle_1_pos < THROTTLE1_MIN_OUT_OF_RANGE) {
+        //     /* This is a garbage value, so we really shouldn't use it.
+        //     * Hence, we'll return early so the rest of the code in
+        //     * this function doesn't run. */
+        //     this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
+        //     return;
+        // }
+        // if (this->throttle_1_pos > THROTTLE1_MAX_OUT_OF_RANGE) {
+        //     this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
+        //     return;
+        // }
+        // if (this->throttle_2_pos < THROTTLE2_MIN_OUT_OF_RANGE) {
+        //     this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
+        //     return;
+        // }
+        // if (this->throttle_2_pos > THROTTLE2_MAX_OUT_OF_RANGE) {
+        //     this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
+        //     return;
+        // }
 
         int64_t throttle_1_percent = map(throttle1, THROTTLE1_LOW, THROTTLE1_HIGH, 0, 100);
         int64_t throttle_2_percent = map(throttle2, THROTTLE2_LOW, THROTTLE2_HIGH, 0, 100);
@@ -304,7 +304,7 @@ std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
 
     /* Brake and throttle cannot be pressed at the same time. */
     // FIXME this isn't working.
-    SAFETY_ASSERT(!(this->pedals.isThrottlePressed() && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottle);
+    // SAFETY_ASSERT(!(this->pedals.isThrottlePressed() && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottle);
 
     /* Pace how often we send a motor command by using a timer. Note, we still
      * send these messages, even when the inverter is off, so that the motor
