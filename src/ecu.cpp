@@ -86,16 +86,16 @@ void assert_failed_handler(AssertLevel level, LineInfo info, AssertCode error_co
 void setup() {
   // First things first, register the panic handler. If something goes
     // wrong during setup, we'll wind everything down.
-    // FIXME this broken, car won't start up so I commented out
-  register_assert_failed_handler(assert_failed_handler);
-  Serial.begin(SERIAL_BAUD_RATE);
+    register_assert_failed_handler(assert_failed_handler);
 
-  MotorCAN.begin();
-  MotorCAN.setBaudRate(CAN_BAUD_RATE);
+    Serial.begin(SERIAL_BAUD_RATE);
 
-  Serial.println("============================================");
-  Serial.println("==========Motor CAN initialized=============");
-  Serial.println("============================================");
+    MotorCAN.begin();
+    MotorCAN.setBaudRate(CAN_BAUD_RATE);
+
+    Serial.println("============================================");
+    Serial.println("==========Motor CAN initialized=============");
+    Serial.println("============================================");
 }
 
 void loop() {

@@ -18,7 +18,7 @@ constexpr uint32_t PEDAL_TIMEOUT_MS = 200;
 constexpr uint32_t ALLOWED_IMPLAUSILIBTY_LENGTH_MS = 100;
 
 /* THROTTLE1_LOW and THROTTLE1_HIGH can be reversed. */
-constexpr int16_t THROTTLE1_LOW = 240;
+constexpr int16_t THROTTLE1_LOW = 255;
 constexpr int16_t THROTTLE1_HIGH = 35;
 /* If the throttle 1 values is lower or higher than this range, we panic.
  * Used to comply with T.4.2.10. */
@@ -26,7 +26,7 @@ constexpr int16_t THROTTLE1_MIN_OUT_OF_RANGE = 5;
 constexpr int16_t THROTTLE1_MAX_OUT_OF_RANGE = 290;
 
 /* THROTTLE2_LOW and THROTTLE2_HIGH can be reversed. */
-constexpr int16_t THROTTLE2_LOW = 162;
+constexpr int16_t THROTTLE2_LOW = 160;
 constexpr int16_t THROTTLE2_HIGH = 177;
 /* If the throttle 2 values is lower or higher than this range, we panic.
  * Used to comply with T.4.2.10. */
@@ -54,9 +54,11 @@ constexpr int16_t BRAKE_CONSIDERED_PRESSED = 20;
 
 constexpr uint32_t STARTUP_DELAY_MS = 2000;  /* 2 seconds */
 
+constexpr int16_t TORQUE_FLOOR = 10;
+
 /* MAX TORQUE */
 /* N * 0.1 */
-constexpr int16_t MAX_TORQUE = 500;
+constexpr int16_t MAX_TORQUE = 1000;
  
 /* Drive Modes */
 constexpr int8_t DRIVE_MODE = 0;
