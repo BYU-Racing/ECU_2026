@@ -92,7 +92,7 @@ bool Pedals::isThrottlePressed() {
 }
 
 bool Pedals::isBrakePressed() {
-    return this->brake_pos > BRAKE_CONSIDERED_PRESSED;
+    return this->brake_pos >= BRAKE_CONSIDERED_PRESSED;
 }
 
 int16_t Pedals::getCurrentTorqueAmount() {
@@ -106,25 +106,27 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
 
         /* Make sure the throttle values are in range. */
         // FIXME these are throwing errors right now.
-        // if (this->throttle_1_pos < THROTTLE1_MIN_OUT_OF_RANGE) {
-        //     /* This is a garbage value, so we really shouldn't use it.
-        //     * Hence, we'll return early so the rest of the code in
-        //     * this function doesn't run. */
-        //     this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
-        //     return;
-        // }
-        // if (this->throttle_1_pos > THROTTLE1_MAX_OUT_OF_RANGE) {
-        //     this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
-        //     return;
-        // }
-        // if (this->throttle_2_pos < THROTTLE2_MIN_OUT_OF_RANGE) {
-        //     this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
-        //     return;
-        // }
-        // if (this->throttle_2_pos > THROTTLE2_MAX_OUT_OF_RANGE) {
-        //     this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
-        //     return;
-        // }
+#ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
+        if (this->throttle_1_pos < THROTTLE1_MIN_OUT_OF_RANGE) {
+            /* This is a garbage value, so we really shouldn't use it.
+            * Hence, we'll return early so the rest of the code in
+            * this function doesn't run. */
+            this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
+            return;
+        }
+        if (this->throttle_1_pos > THROTTLE1_MAX_OUT_OF_RANGE) {
+            this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
+            return;
+        }
+        if (this->throttle_2_pos < THROTTLE2_MIN_OUT_OF_RANGE) {
+            this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
+            return;
+        }
+        if (this->throttle_2_pos > THROTTLE2_MAX_OUT_OF_RANGE) {
+            this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
+            return;
+        }
+#endif
 
         int64_t throttle_1_percent = map(throttle1, THROTTLE1_LOW, THROTTLE1_HIGH, 0, 100);
         int64_t throttle_2_percent = map(throttle2, THROTTLE2_LOW, THROTTLE2_HIGH, 0, 100);
@@ -139,14 +141,19 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
 
         // FIXME this is throwing an error.
         /* Make sure the two throttle values haven't diverged too far. */
-        // if (abs(throttle_1_percent - throttle_2_percent) >= THROTTLE_DISAGREE) {
-        //     this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleDisagree);
-        //     return;
-        // }
+#ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
+        if (abs(throttle_1_percent - throttle_2_percent) >= THROTTLE_DISAGREE) {
+            this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleDisagree);
+            return;
+        }
+#endif
 
         // FIXME actually average the values.
-        // int64_t average = (throttle1_percent + throttle2_percent) / 2;
+#ifdef FIXME_HACKS_TO_GET_THINGS_WORKING
         int64_t average = throttle_1_percent;
+#else
+        int64_t average = (throttle_1_percent + throttle_2_percent) / 2;
+#endif
 
         this->mapped_throttle = average;
     }
@@ -240,9 +247,12 @@ void Ecu::handleStartupSequence(uint32_t current_time_ms) {
          * We will also wait two seconds before fully starting up, or abort if
          * one of the preconditions stops holding. */
 
-        /* FIXME right now we ignore the brake value. It should be
-         *     if (this->pedals.isBrakePressed() && debounced_switch) */
+        /* FIXME right now we ignore the brake value. */
+#ifdef FIXME_HACKS_TO_GET_THINGS_WORKING
         if (debounced_switch) {
+#else
+        if (this->pedals.isBrakePressed() && debounced_switch) {
+#endif
             if (!this->startup_countdown.started()) {
                 this->startup_countdown.start(current_time_ms, STARTUP_DELAY_MS);
             } else if (this->startup_countdown.triggerReached(current_time_ms)) {
@@ -283,6 +293,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
 
 std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
     this->handleStartupSequence(current_time_ms);
+    this->pedals.poll(current_time_ms);
 
     /* Engine is enabled if all the preconditions of `car_fully_on` passed,
      * and if the brake is up. We don't enable the inverter until the
@@ -291,20 +302,16 @@ std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
     bool inverter_enabled = false;
     int16_t torque_to_use = 0;
 
-    /* FIXME testing only. */
-    // if (this->car_fully_on && this->brake_pressure < BRAKE_CONSIDERED_PRESSED) {
     if (this->car_fully_on) {
         inverter_enabled = true;
-        this->pedals.poll(current_time_ms);
         torque_to_use = this->pedals.getCurrentTorqueAmount();
-    } else {
-        /* If the car isn't on, we need to clear the pedals' previous state. */
-        this->pedals = Pedals{};
     }
 
     /* Brake and throttle cannot be pressed at the same time. */
     // FIXME this isn't working.
-    // SAFETY_ASSERT(!(this->pedals.isThrottlePressed() && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottle);
+#ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
+    SAFETY_ASSERT(!(this->pedals.isThrottlePressed() && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottle);
+#endif
 
     /* Pace how often we send a motor command by using a timer. Note, we still
      * send these messages, even when the inverter is off, so that the motor

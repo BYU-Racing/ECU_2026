@@ -38,34 +38,6 @@ void test_can_msg_eql(CAN_message_t msg, MessageId id, uint8_t* buf, size_t len)
     TEST_ASSERT(result == 0);
 }
 
-std::tuple<Ecu, uint32_t> ecu_after_startup_sequence() {
-    uint32_t current_time_ms = 0;
-
-    Ecu ecu = {};
-
-    /* It should not produce any messages at the beginning. */
-    TEST_ASSERT(ecu.poll(current_time_ms) == std::nullopt);
-
-    /* Let's let it know that the brake is down and that the switch is on. */
-    ecu.processMessage(current_time_ms, create_brake_pressure(BRAKE_CONSIDERED_PRESSED));
-    ecu.processMessage(current_time_ms, create_start_switch(true));
-
-    /* However, we still should not emit a motor command, since the car still isn't on. */
-    TEST_ASSERT(ecu.poll(current_time_ms) == std::nullopt);
-
-    /* 2 seconds later... */
-    current_time_ms += 2000;
-    /* Now we should be generating a motor command. */
-    /*                                                   forward vv    vv enabled */
-    uint8_t enabled_but_no_torque[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00};
-    auto val = ecu.poll(current_time_ms).value(); /* `.value()` will throw if std::nullopt. */
-    test_can_msg_eql(val, MessageId::ControlCommand, enabled_but_no_torque, 8);
-    /* We shouldn't get anything after the motor command. */
-    TEST_ASSERT(ecu.poll(current_time_ms) == std::nullopt);
-
-    return std::make_tuple(ecu, current_time_ms);
-}
-
 void wait_while_sending_pedal_positions(
     Ecu* ecu,
     uint32_t* current_time_ms,
@@ -82,6 +54,29 @@ void wait_while_sending_pedal_positions(
         *current_time_ms += 100;
     }
     *current_time_ms += duration % 100;
+}
+
+std::tuple<Ecu, uint32_t> ecu_after_startup_sequence() {
+    uint32_t current_time_ms = 0;
+
+    Ecu ecu = {};
+
+    /* Let's let it know that the brake is down and that the switch is on. */
+    ecu.processMessage(current_time_ms, create_brake_pressure(BRAKE_CONSIDERED_PRESSED));
+    ecu.processMessage(current_time_ms, create_start_switch(true));
+    ecu.poll(current_time_ms);
+
+    /* 2 seconds later... */
+    wait_while_sending_pedal_positions(&ecu, &current_time_ms, 2000, THROTTLE1_LOW, THROTTLE2_LOW, BRAKE_CONSIDERED_PRESSED);
+    /* Now we should be generating a motor command. */
+    /*                                                   forward vv    vv enabled */
+    uint8_t enabled_but_no_torque[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00};
+    auto val = ecu.poll(current_time_ms).value(); /* `.value()` will throw if std::nullopt. */
+    test_can_msg_eql(val, MessageId::ControlCommand, enabled_but_no_torque, 8);
+    /* We shouldn't get anything after the motor command. */
+    TEST_ASSERT(ecu.poll(current_time_ms) == std::nullopt);
+
+    return std::make_tuple(ecu, current_time_ms);
 }
 
 void test_ecu() {
@@ -202,7 +197,7 @@ void test_switch_debounce() {
     TEST_ASSERT((msg.value().buf[5] & 0x01) == 0x01);
 
     /* Wait for the full 1000ms debounce period to complete. */
-    current_time_ms += 1000;
+    wait_while_sending_pedal_positions(&ecu, &current_time_ms, 1000, THROTTLE1_LOW, THROTTLE2_LOW, BRAKE_PRESSURE_MIN);
     ecu.processMessage(current_time_ms, create_start_switch(false));
 
     /* Now the car should be off. */
