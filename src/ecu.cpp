@@ -135,7 +135,7 @@ void loop() {
     else {
         /* Generate all outgoing messages and send each. */
         while (true) {
-            std::optional<CAN_message_t> to_send = ECU.emitMessage(current_time_ms);
+            std::optional<CAN_message_t> to_send = ECU.poll(current_time_ms);
             if (to_send.has_value()) {
                 MotorCAN.write(*to_send);
             } else {

@@ -29,7 +29,7 @@ void Pedals::poll(uint32_t current_time_ms) {
         * panic. The following code handles this timeout scenario. */
 
     /* We proactively start these triggers, but cancel them when we receive
-        * a message (see `inputThrottleOnePosition` for example). */
+     * a message (see `inputThrottleOnePosition` for example). */
     this->too_long_since_throttle_1.startIfStopped(current_time_ms, PEDAL_TIMEOUT_MS);
     this->too_long_since_throttle_2.startIfStopped(current_time_ms, PEDAL_TIMEOUT_MS);
     this->too_long_since_brake.startIfStopped(current_time_ms, PEDAL_TIMEOUT_MS);
@@ -152,15 +152,15 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
     }
 }
 
-int16_t Pedals::smoothThrottle(uint32_t current_time_ms) {
+void Pedals::smoothThrottle(uint32_t current_time_ms) {
     /* Smooth out throttle values by averaging out previous values. */
 
-    constexpr size_t torque_memory_len = sizeof(this->torque_memory, this->torque_memory[0]);
+    constexpr size_t torque_memory_len = sizeof(this->torque_memory) / sizeof(this->torque_memory[0]);
 
     /* If we receive a value of 0, reset history and return 0. */
     if (this->mapped_throttle == 0) {
-        memset(&this->torque_memory, 0, torque_memory_len);
-        return 0;
+        memset(&this->torque_memory, 0, sizeof(this->torque_memory));
+        this->smoothed_throttle = 0;
     }
 
     if (this->torque_memory_pacing.shouldFire(current_time_ms)) {
@@ -183,12 +183,12 @@ int16_t Pedals::smoothThrottle(uint32_t current_time_ms) {
     int16_t averaged = static_cast<int16_t>(total_torque / torque_memory_len);
     SAFETY_ASSERT(averaged >= 0, AssertCode::SmoothTorqueLessThanZero);
 
-    return averaged;
+    this->smoothed_throttle = averaged;
 }
 
-/* We don't immediately panic when an implausibility occurs, as the rules allow
-* us to tolerate an implausibility for up to 100 ms. See the 2026 rules, section
-* T.4.2.5. */
+/* This records that an implausibility happened. We don't immediately panic when
+ * an implausibility occurs, as the rules allow us to tolerate an implausibility
+ * for up to 100 ms (2026 rules, section T.4.2.5). */
 void Pedals::noteImplausibility(uint32_t current_time_ms, LineInfo line_info, AssertCode code) {
     ImplausibilityDetails details;
     details.happened_at_ms = current_time_ms;
@@ -281,32 +281,34 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
     }
 };
 
-std::optional<CAN_message_t> Ecu::emitMessage(uint32_t current_time_ms) {
+std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
     this->handleStartupSequence(current_time_ms);
-    this->pedals.poll(current_time_ms);
-
-    /* Brake and throttle cannot be pressed at the same time. */
-    // FIXME this isn't working.
-    SAFETY_ASSERT(!(this->pedals.isThrottlePressed() && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottle);
-
-    bool inverter_enabled = false;
 
     /* Engine is enabled if all the preconditions of `car_fully_on` passed,
      * and if the brake is up. We don't enable the inverter until the
      * driver has lifted up the brake. */
 
+    bool inverter_enabled = false;
+    int16_t torque_to_use = 0;
+
     /* FIXME testing only. */
     // if (this->car_fully_on && this->brake_pressure < BRAKE_CONSIDERED_PRESSED) {
     if (this->car_fully_on) {
         inverter_enabled = true;
-    }
-
-    int16_t torque_to_use = 0;
-    if (inverter_enabled) {
+        this->pedals.poll(current_time_ms);
         torque_to_use = this->pedals.getCurrentTorqueAmount();
+    } else {
+        /* If the car isn't on, we need to clear the pedals' previous state. */
+        this->pedals = Pedals{};
     }
 
-    /* Pace how often we send a motor command by using a timer. */
+    /* Brake and throttle cannot be pressed at the same time. */
+    // FIXME this isn't working.
+    SAFETY_ASSERT(!(this->pedals.isThrottlePressed() && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottle);
+
+    /* Pace how often we send a motor command by using a timer. Note, we still
+     * send these messages, even when the inverter is off, so that the motor
+     * gets shutdown messages. */
     if (this->motor_control_pacing.shouldFire(current_time_ms)) {
         MotorControlCommand cmd;
         cmd.torque = torque_to_use;

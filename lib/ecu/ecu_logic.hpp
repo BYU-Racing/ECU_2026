@@ -76,7 +76,7 @@ class Pedals {
     void maybeRecomputeMappedThrottle(uint32_t current_time_ms);
 
     /* Internal helper function used to smooth the throttle through time. */
-    int16_t smoothThrottle(uint32_t current_time_ms);
+    void smoothThrottle(uint32_t current_time_ms);
 
     /* We don't immediately panic when an implausibility occurs, as the rules
      * allow us to tolerate an implausibility for up to 100 ms. See the 2026
@@ -91,7 +91,7 @@ public:
     /* The caller of this should continously call this until it returns
      * `std::nullopt`. For each message emitted, the caller should send
      * along the CAN bus. */
-    std::optional<CAN_message_t> emitMessage(uint32_t current_time_ms);
+    std::optional<CAN_message_t> poll(uint32_t current_time_ms);
 
     /* smooth torque */
     int16_t smoothThrottle(uint32_t current_time);

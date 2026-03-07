@@ -434,6 +434,8 @@ struct MotorControlCommand {
 CAN_message_t empty_can_message(MessageId id, uint8_t len);
 uint16_t read_u16_le(uint8_t* buf);
 void write_u16_le(uint8_t* buf, uint16_t value);
+int16_t read_i16_le(uint8_t* buf);
+void write_i16_le(uint8_t* buf, int16_t value);
 uint32_t read_u32_le(const uint8_t* buf);
 void write_u32_le(uint8_t* buf, uint32_t value);
 float read_f32_le(uint8_t* buf);
