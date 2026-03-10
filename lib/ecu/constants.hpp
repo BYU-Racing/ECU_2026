@@ -14,8 +14,12 @@ constexpr uint32_t CAN_BAUD_RATE = 250000;
 /* How long we tolerate between receiving pedal values until we panic. */
 constexpr uint32_t PEDAL_TIMEOUT_MS = 200;
 /* How long an implausibility is allowed to last before panicking.
- * Set to 100 ms according to the 2026 SAE rules, section T.4.2.5 */
-constexpr uint32_t ALLOWED_IMPLAUSILIBTY_LENGTH_MS = 100;
+ * Why 60 ms, and not 100 ms, like the rules say? Because the DCF
+ * only generates messages every 30 ms, so we could receive data
+ * that's 30 ms old. 30 ms + 60 ms = 90 ms, which gives us another
+ * 10 ms of wiggle room for the code to run. See the 2026 rules,
+ * section T.4.2.5 */
+constexpr uint32_t ALLOWED_IMPLAUSILIBTY_LENGTH_MS = 60;
 
 /* THROTTLE1_LOW and THROTTLE1_HIGH can be reversed. */
 constexpr int16_t THROTTLE1_LOW = 255;
