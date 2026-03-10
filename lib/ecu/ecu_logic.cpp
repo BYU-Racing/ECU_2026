@@ -1,7 +1,8 @@
 #include "ecu_logic.hpp"
 
-#include <cmath>
 #include <string.h>
+
+#include <cmath>
 
 #include "assert.hpp"
 #include "can_serde.hpp"
@@ -17,16 +18,15 @@ int16_t map_throttle_to_torque(uint16_t throttle_percent) {
 
 void Pedals::poll(uint32_t current_time_ms) {
     /* Save the current implausibility value, before we clear
-        * `this->implausibility`. This lets us see if the implausibility is
-        * still happening. This works because if we clear the implausibility,
-        * and get a new implausibility, it means the implausibility hasn't
-        * stopped. */
+     * `this->implausibility`. This lets us see if the implausibility is still
+     * happening. This works because if we clear the implausibility, and get a
+     * new implausibility, it means the implausibility hasn't stopped. */
     auto last_implausibility = this->implausibility;
     this->implausibility = std::nullopt;
 
-    /* According to the 2026 rules (section T.4.2.11(b)), if a message
-        * hasn't been received since a certain amount of time, we need to
-        * panic. The following code handles this timeout scenario. */
+    /* According to the 2026 rules (section T.4.2.11(b)), if a message hasn't
+     * been received since a certain amount of time, we need to panic. The
+     * following code handles this timeout scenario. */
 
     /* We proactively start these triggers, but cancel them when we receive
      * a message (see `inputThrottleOnePosition` for example). */
@@ -49,15 +49,15 @@ void Pedals::poll(uint32_t current_time_ms) {
 
         if (last_implausibility.has_value()) {
             /* Restore the original implausibility information, so we have
-                * both the time and information that the first implausibility
-                * happened at. */
+             * both the time and information that the first implausibility
+             * happened at. */
             this->implausibility = *last_implausibility;
         }
 
         /* Use this to panic if an implausibility has occured for too long. */
         if (current_time_ms - details.happened_at_ms > ALLOWED_IMPLAUSILIBTY_LENGTH_MS) {
             /* Because we tracked the original file and error number, we report
-                * those details, instead of the current line. */
+             * those details, instead of the current line. */
             assert_failed(AssertLevel::Safety, details.line_info, details.code);
         }
     }
@@ -132,8 +132,8 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
         int64_t throttle_2_percent = map(throttle2, THROTTLE2_LOW, THROTTLE2_HIGH, 0, 100);
 
         /* Throttle values may go slightly below 0 or above 100, so we'll
-            * just saturate at those values (if it's significantly out of
-            * range, the preconditions of this block will return early). */
+         * just saturate at those values (if it's significantly out of
+         * range, the preconditions of this block will return early). */
         if (throttle_1_percent < 0) throttle_1_percent = 0;
         if (throttle_1_percent > 100) throttle_1_percent = 100;
         if (throttle_2_percent < 0) throttle_2_percent = 0;
