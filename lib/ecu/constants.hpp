@@ -22,16 +22,16 @@ constexpr uint32_t PEDAL_TIMEOUT_MS = 200;
 constexpr uint32_t ALLOWED_IMPLAUSILIBTY_LENGTH_MS = 60;
 
 /* THROTTLE1_LOW and THROTTLE1_HIGH can be reversed. */
-constexpr int16_t THROTTLE1_LOW = 255;
-constexpr int16_t THROTTLE1_HIGH = 35;
+constexpr int16_t THROTTLE1_LOW = 660;
+constexpr int16_t THROTTLE1_HIGH = 950;
 /* If the throttle 1 values is lower or higher than this range, we panic.
  * Used to comply with T.4.2.10. */
-constexpr int16_t THROTTLE1_MIN_OUT_OF_RANGE = 5;
-constexpr int16_t THROTTLE1_MAX_OUT_OF_RANGE = 290;
+constexpr int16_t THROTTLE1_MIN_OUT_OF_RANGE = 620;
+constexpr int16_t THROTTLE1_MAX_OUT_OF_RANGE = 970;
 
 /* THROTTLE2_LOW and THROTTLE2_HIGH can be reversed. */
-constexpr int16_t THROTTLE2_LOW = 160;
-constexpr int16_t THROTTLE2_HIGH = 177;
+constexpr int16_t THROTTLE2_LOW = 405;
+constexpr int16_t THROTTLE2_HIGH = 325;
 /* If the throttle 2 values is lower or higher than this range, we panic.
  * Used to comply with T.4.2.10. */
 constexpr int16_t THROTTLE2_MIN_OUT_OF_RANGE = 150;

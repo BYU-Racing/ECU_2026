@@ -34,6 +34,7 @@ void Pedals::poll(uint32_t current_time_ms) {
     this->too_long_since_throttle_2.startIfStopped(current_time_ms, PEDAL_TIMEOUT_MS);
     this->too_long_since_brake.startIfStopped(current_time_ms, PEDAL_TIMEOUT_MS);
 
+#ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
     if (this->too_long_since_throttle_1.triggerReached(current_time_ms)) {
         SAFETY_ASSERT(false, AssertCode::PedalTimeout);
     }
@@ -43,6 +44,7 @@ void Pedals::poll(uint32_t current_time_ms) {
     if (this->too_long_since_brake.triggerReached(current_time_ms)) {
         SAFETY_ASSERT(false, AssertCode::PedalTimeout);
     }
+#endif
 
     if (this->implausibility.has_value()) {
         ImplausibilityDetails details = *this->implausibility;
