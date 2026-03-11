@@ -25,7 +25,7 @@ Trigger SOFT_RESET_TRIGGER = {};
 jmp_buf soft_assert_failed_goto_start_of_loop;
 #endif
 
-void safety_assert_failed_handler(const char* file, int line, AssertCode error_code) {
+void safety_assert_failed_handler(LineInfo info, AssertCode error_code) {
     /* Shut everything down. */
     CAN_message_t shutdown_message = empty_can_message(MessageId::ControlCommand, 8);
     /* `empty_can_message` is guaranteed to generate a message full of zeroes,
@@ -35,13 +35,13 @@ void safety_assert_failed_handler(const char* file, int line, AssertCode error_c
 
     /* Loop forever so we never do anything after the panic. */
     while (true) {
-        Serial.printf("Safety assertion failed! In file %s:%d with error code %d\n", file, line, error_code);
-        Serial.printf("File hash %lu\n", (unsigned long) str_hash(file));
+        Serial.printf("Safety assertion failed! In file %s:%d with error code %d\n", info.filename, info.line_no, error_code);
+        Serial.printf("File hash %lu\n", (unsigned long) str_hash(info.filename));
 
         CriticalFault fault_msg;
         fault_msg.error_code = error_code;
-        fault_msg.assert_failure_line = line;
-        fault_msg.file_name_hash = str_hash(file);
+        fault_msg.assert_failure_line = info.line_no;
+        fault_msg.file_name_hash = str_hash(info.filename);
 
         MotorCAN.write(create_critical_fault_command(fault_msg));
 
@@ -54,23 +54,23 @@ void safety_assert_failed_handler(const char* file, int line, AssertCode error_c
 }
 
 #ifdef ENABLE_DEBUGGING
-void soft_assert_failed_handler(const char* file, int line, AssertCode error_code) {
+void soft_assert_failed_handler(LineInfo info, AssertCode error_code) {
     /* Be sure to let us know if a soft assert failed. */
-    Serial.printf("Soft assertion failed! In file %s:%d with error code %d\n", file, line, error_code);
+    Serial.printf("Soft assertion failed! In file %s:%d with error code %d\n", info.filename, info.line_no, error_code);
     /* Start the reset trigger. */
     SOFT_RESET_TRIGGER.start(millis(), SOFT_RESET_LENGTH_MS);
     longjmp(soft_assert_failed_goto_start_of_loop, 0);
 }
 #endif
 
-void assert_failed_handler(AssertLevel level, const char* file, int line, AssertCode error_code) {
+void assert_failed_handler(AssertLevel level, LineInfo info, AssertCode error_code) {
 #ifdef ENABLE_DEBUGGING
     switch (level) {
         case AssertLevel::Safety:
-            safety_assert_failed_handler(file, line, error_code);
+            safety_assert_failed_handler(info, error_code);
             break;
         case AssertLevel::Soft:
-            soft_assert_failed_handler(file, line, error_code);
+            soft_assert_failed_handler(info, error_code);
             break;
     }
 #else
@@ -86,10 +86,7 @@ void assert_failed_handler(AssertLevel level, const char* file, int line, Assert
 void setup() {
   // First things first, register the panic handler. If something goes
     // wrong during setup, we'll wind everything down.
-    register_assert_failed_handler(assert_failed_handler);   
-
-    /* Delay to hopefully stop voltage spikes from changing the throttle values*/
-    delay(2000);
+    register_assert_failed_handler(assert_failed_handler);
 
     Serial.begin(SERIAL_BAUD_RATE);
 
@@ -101,9 +98,6 @@ void setup() {
     Serial.println("============================================");
 }
 
-/* This is used to periodically send state updates with the contents of ECU. */
-Trigger state_print_timer = {};
-
 void loop() {
 #ifdef ENABLE_DEBUGGING
     /* Save our current location, so if a soft assert fails, we'll go back to here. */
@@ -113,7 +107,6 @@ void loop() {
     /* The ECU does not keep track of what time it is, nor does it use `millis`,
      * so we always have to tell it what time it is. */
     uint32_t current_time_ms = millis();
-    /* FIXME a bug */
 
     /* Receive a message and have the ECU process it. */
     CAN_message_t rmsg;
@@ -141,19 +134,12 @@ void loop() {
     else {
         /* Generate all outgoing messages and send each. */
         while (true) {
-            std::optional<CAN_message_t> to_send = ECU.emitMessage(current_time_ms);
+            std::optional<CAN_message_t> to_send = ECU.poll(current_time_ms);
             if (to_send.has_value()) {
                 MotorCAN.write(*to_send);
             } else {
                 break;
             }
         }
-    }
-
-    /* Used to space out state printing messages. */
-    if (!state_print_timer.started()) {
-        state_print_timer.start(current_time_ms, 500/*ms*/);
-    } else if (state_print_timer.triggerReached(current_time_ms)) {
-        ECU.printState();
     }
 }

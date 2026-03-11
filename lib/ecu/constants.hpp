@@ -9,15 +9,31 @@ constexpr uint32_t SOFT_RESET_LENGTH_MS = 2000;
 constexpr long SERIAL_BAUD_RATE = 115200;
 constexpr uint32_t CAN_BAUD_RATE = 250000;
 
+/* Throttle constants */
+
+/* How long we tolerate between receiving pedal values until we panic. */
+constexpr uint32_t PEDAL_TIMEOUT_MS = 200;
+/* How long an implausibility is allowed to last before panicking.
+ * Why 60 ms, and not 100 ms, like the rules say? Because the DCF
+ * only generates messages every 30 ms, so we could receive data
+ * that's 30 ms old. 30 ms + 60 ms = 90 ms, which gives us another
+ * 10 ms of wiggle room for the code to run. See the 2026 rules,
+ * section T.4.2.5 */
+constexpr uint32_t ALLOWED_IMPLAUSILIBTY_LENGTH_MS = 60;
+
 /* THROTTLE1_LOW and THROTTLE1_HIGH can be reversed. */
-constexpr int16_t THROTTLE1_LOW = 255;
-constexpr int16_t THROTTLE1_HIGH = 35;
-constexpr int16_t THROTTLE1_MIN_OUT_OF_RANGE = 5;
-constexpr int16_t THROTTLE1_MAX_OUT_OF_RANGE = 290;
+constexpr int16_t THROTTLE1_LOW = 660;
+constexpr int16_t THROTTLE1_HIGH = 950;
+/* If the throttle 1 values is lower or higher than this range, we panic.
+ * Used to comply with T.4.2.10. */
+constexpr int16_t THROTTLE1_MIN_OUT_OF_RANGE = 620;
+constexpr int16_t THROTTLE1_MAX_OUT_OF_RANGE = 970;
 
 /* THROTTLE2_LOW and THROTTLE2_HIGH can be reversed. */
-constexpr int16_t THROTTLE2_LOW = 160;
-constexpr int16_t THROTTLE2_HIGH = 177;
+constexpr int16_t THROTTLE2_LOW = 405;
+constexpr int16_t THROTTLE2_HIGH = 325;
+/* If the throttle 2 values is lower or higher than this range, we panic.
+ * Used to comply with T.4.2.10. */
 constexpr int16_t THROTTLE2_MIN_OUT_OF_RANGE = 150;
 constexpr int16_t THROTTLE2_MAX_OUT_OF_RANGE = 190;
 
