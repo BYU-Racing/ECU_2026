@@ -87,8 +87,8 @@ void Pedals::inputBrakePosition(uint32_t current_time_ms, uint16_t position) {
     this->too_long_since_brake.cancel();
 }
 
-bool Pedals::isThrottlePressed() {
-    return this->smoothed_throttle > 0;
+uint8_t Pedals::getThrottleValue() {
+    return this->smoothed_throttle;
 }
 
 bool Pedals::isBrakePressed() {
@@ -181,13 +181,13 @@ void Pedals::smoothThrottle(uint32_t current_time_ms) {
         this->torque_memory[0] = this->mapped_throttle;
     }
 
-    int32_t total_torque = 0;
+    uint32_t total_torque = 0;
     /* Sum up history. */
     for (size_t i = 0; i < torque_memory_len; i++) {
         total_torque += torque_memory[i];
     }
 
-    int16_t averaged = static_cast<int16_t>(total_torque / torque_memory_len);
+    uint8_t averaged = static_cast<uint8_t>(total_torque / torque_memory_len);
     SAFETY_ASSERT(averaged >= 0, AssertCode::SmoothTorqueLessThanZero);
 
     this->smoothed_throttle = averaged;
@@ -307,10 +307,10 @@ std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
         torque_to_use = this->pedals.getCurrentTorqueAmount();
     }
 
-    /* Brake and throttle cannot be pressed at the same time. */
+    /* Brake and throttle cannot be pressed at the same time. See the 2026 rules, EV.4.7. */
     // FIXME this isn't working.
 #ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
-    SAFETY_ASSERT(!(this->pedals.isThrottlePressed() && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottle);
+    SAFETY_ASSERT(!(this->pedals.getThrottleValue() > 25 && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottle);
 #endif
 
     /* Pace how often we send a motor command by using a timer. Note, we still

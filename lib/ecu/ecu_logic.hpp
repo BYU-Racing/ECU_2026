@@ -30,6 +30,7 @@ class Pedals {
     void inputThrottleTwoPosition(uint32_t current_time_ms, uint16_t value);
     void inputBrakePosition(uint32_t current_time_ms, uint16_t position);
     bool isThrottlePressed();
+    uint8_t getThrottleValue();
     bool isBrakePressed();
     int16_t getCurrentTorqueAmount();
 
@@ -59,17 +60,17 @@ class Pedals {
     std::optional<uint16_t> throttle_2_pos = std::nullopt;
     /* Mapped throttle value. This is an intermediate result after mapping
      * the two throttle sensors to [0, 100] and averaging them. */
-    int16_t mapped_throttle = 0;
+    uint8_t mapped_throttle = 0;
 
-    /* Current brake position. */
+    /* Current brake position. Raw sensor reading. */
     uint16_t brake_pos = 0;
 
     /* Throttle smoothing memory. */
-    uint16_t torque_memory[4] = {0, 0, 0, 0};
+    uint8_t torque_memory[4] = {0, 0, 0, 0};
     /* We only shift to the next value in torque_memory every 20ms. */
     Timer torque_memory_pacing = Timer(0, 20);
     /* The result from smoothing the throttle. */
-    int16_t smoothed_throttle = 0;
+    uint8_t smoothed_throttle = 0;
 
     /* If we've received both a new throttle 1 value, and a new throttle 2 value, then
      * this will calculate the new mapped throttle value (as a percentage in range [0, 100]).*/
@@ -111,20 +112,10 @@ private:
     bool last_start_switch_value = false;
     Trigger turn_off_timeout;
 
-    /* How far the brake is pressed down. */
-    uint16_t brake_pressure = BRAKE_PRESSURE_MIN;
-
     /* When the brake is pressed and the enable switch is flipped, we still
      * wait 2 seconds before enabling the motor. This is that startup countdown. */
     Trigger startup_countdown;
 
     /* Timer to pace how often we send motor control commands. */
     Timer motor_control_pacing = Timer(0, 15);
-
-    /* throttle mapping memory */
-    uint16_t torque_memory[4] = {0, 0, 0, 0};
-
-    /* We only shift to the next value in torque_memory every 20ms. */
-    Timer torque_memory_pacing = Timer(0, 20);
-
 };
