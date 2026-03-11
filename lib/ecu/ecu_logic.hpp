@@ -67,8 +67,8 @@ class Pedals {
 
     /* Throttle smoothing memory. */
     uint8_t torque_memory[4] = {0, 0, 0, 0};
-    /* We only shift to the next value in torque_memory every 20ms. */
-    Timer torque_memory_pacing = Timer(0, 20);
+    /* We only shift to the next value in torque_memory every SMOOTH_PERIOD_MS ms. */
+    Timer torque_memory_pacing = Timer(0, SMOOTH_PERIOD_MS);
     /* The result from smoothing the throttle. */
     uint8_t smoothed_throttle = 0;
 
