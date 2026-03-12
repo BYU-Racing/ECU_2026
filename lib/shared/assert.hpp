@@ -31,17 +31,15 @@
 /* Error codes for safety asserts */
 enum class AssertCode: uint8_t {
     Unknown = 0,
-    BrakeAndThrottle = 1,
-    ThrottleOutOfRange = 2,
-    ThrottleDisagree = 3,
-    TorqueLessThanZero = 4,
-    SmoothTorqueLessThanZero = 5,
-    ThrottleOverflow = 6,
-    BadMessage = 7,
+    BadMessage = 1,
+    IntegerOverflow = 2,
+    /* Codes 3-20 are reserved for future general messages. */
+    BrakeAndThrottlePressed = 20,
+    ThrottleOutOfRange = 21,
+    ThrottleSensorsDiverged = 22,
     /* If it's been too long since we've received a pedal value, we panic.
      * T.4.2.11(b) 2026 rules */
-    PedalTimeout = 8,
-    IntegerOverflow = 9,
+    PedalTimeout = 23,
 };
 
 /* Captures the filename and file. I wish I could do this without a macro,

@@ -145,7 +145,7 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
         /* Make sure the two throttle values haven't diverged too far. */
 #ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
         if (abs(throttle_1_percent - throttle_2_percent) >= THROTTLE_DISAGREE) {
-            this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleDisagree);
+            this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleSensorsDiverged);
             return;
         }
 #endif
@@ -190,7 +190,7 @@ void Pedals::smoothThrottle(uint32_t current_time_ms) {
     }
 
     uint8_t averaged = static_cast<uint8_t>(total_torque / torque_memory_len);
-    SAFETY_ASSERT(averaged >= 0, AssertCode::SmoothTorqueLessThanZero);
+    SAFETY_ASSERT(averaged >= 0, AssertCode::IntegerOverflow);
 
     this->smoothed_throttle = averaged;
 }
@@ -312,7 +312,7 @@ std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
     /* Brake and throttle cannot be pressed at the same time. See the 2026 rules, EV.4.7. */
     // FIXME this isn't working.
 #ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
-    SAFETY_ASSERT(!(this->pedals.getThrottleValue() > 25 && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottle);
+    SAFETY_ASSERT(!(this->pedals.getThrottleValue() > 25 && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottlePressed);
 #endif
 
     /* Pace how often we send a motor command by using a timer. Note, we still
