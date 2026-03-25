@@ -74,7 +74,7 @@ class Pedals {
 
     /* This is a PID, with the target as the current target torque, and the
      * measurement as the last target. */
-    Pid throttle_pid = Pid(0, 0.2, 0.05, 0.0, 10.0);
+    Pid throttle_pid = Pid(0, 0.0, 7.8, 0.0, 20.0);
     Timer pid_pacing = Timer(0, PID_PERIOD_MS);
     double last_output = 0.0;
     double pid_output = 0.0;
