@@ -66,7 +66,7 @@ class Pedals {
     uint16_t brake_pos = 0;
 
     /* Throttle smoothing memory. */
-    uint8_t torque_memory[4] = {0, 0, 0, 0};
+    uint8_t torque_memory[3] = {0, 0, 0};
     /* We only shift to the next value in torque_memory every SMOOTH_PERIOD_MS ms. */
     Timer torque_memory_pacing = Timer(0, SMOOTH_PERIOD_MS);
     /* The result from smoothing the throttle. */
@@ -75,6 +75,7 @@ class Pedals {
     /* This is a PID, with the target as the current target torque, and the
      * measurement as the last target. */
     Pid throttle_pid = Pid(0, 0.2, 0.05, 0.0, 10.0);
+    Timer pid_pacing = Timer(0, PID_PERIOD_MS);
     double last_output = 0.0;
     double pid_output = 0.0;
 

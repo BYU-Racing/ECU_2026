@@ -193,10 +193,12 @@ void Pedals::smoothThrottle(uint32_t current_time_ms) {
 }
 
 void Pedals::throttlePostProcessing(uint32_t current_time_ms) {
-    double torque_target = map_throttle_to_torque(this->smoothed_throttle);
+    if (this->pid_pacing.shouldFire(current_time_ms)) {
+        double torque_target = map_throttle_to_torque(this->smoothed_throttle);
 
-    this->pid_output = this->throttle_pid.nextValue(current_time_ms, torque_target, this->last_output);
-    this->last_output = this->pid_output;
+        this->pid_output = this->throttle_pid.nextValue(current_time_ms, torque_target, this->last_output);
+        this->last_output = this->pid_output;
+    }
 }
 
 /* This records that an implausibility happened. We don't immediately panic when
