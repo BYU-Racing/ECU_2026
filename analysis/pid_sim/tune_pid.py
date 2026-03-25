@@ -85,8 +85,8 @@ class CostFn:
 def main():
     parser = argparse.ArgumentParser(description="Tune PID parameters against a CAN dump.")
     parser.add_argument("--can-dump", type=Path, required=True, metavar="FILE")
-    parser.add_argument("--windup-cap", type=float, default=10.0, metavar="N",
-                        help="Fixed windup cap (default: 10.0)")
+    parser.add_argument("--windup-cap", type=float, default=20.0, metavar="N",
+                        help="Fixed windup cap in Nm (default: 20.0 = max torque)")
     parser.add_argument("--smoothness", type=float, default=10.0, metavar="N",
                         help="Rate-of-change penalty weight lambda (default: 10.0). "
                              "Higher = smoother output, more lag.")
@@ -107,18 +107,16 @@ def main():
 
     targets = [throttle1_to_target_nm(t1) for t1, *_ in pairs]
     times_ms = [i * STEP_MS for i in range(len(pairs))]
-
-    # Windup cap must be at least max_target / i_gain to avoid steady-state error.
-    # We set it generously to max_target so it never limits steady-state tracking
-    # regardless of what I gain the optimizer chooses.
-    windup_cap = max(args.windup_cap, max(targets))
-    if windup_cap != args.windup_cap:
-        print(f"note: windup_cap raised to {windup_cap:.1f} Nm to avoid steady-state error "
-              f"(was {args.windup_cap})")
+    windup_cap = args.windup_cap
 
     cost_fn = CostFn(targets, times_ms, windup_cap, args.smoothness)
 
-    print(f"Optimizing over {len(pairs)} samples, windup_cap={windup_cap}, smoothness={args.smoothness}")
+    print(f"Optimizing over {len(pairs)} samples with:")
+    print(f"  smoothness:  {args.smoothness}")
+    print(f"  windup_cap:  {windup_cap} Nm")
+    print(f"  p range:     [0, {args.p_max}]")
+    print(f"  i range:     [0, {args.i_max}]")
+    print(f"  d range:     [0, {args.d_max}]")
     print("This may take a few minutes...")
 
     result = differential_evolution(
