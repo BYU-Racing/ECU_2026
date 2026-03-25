@@ -10,11 +10,16 @@
 #include "can_serde.hpp"
 #include "ecu_logic.hpp"
 
+#include "generated/git_info.h"
+
 using namespace std;
 
+FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> DataCAN;
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> MotorCAN;
 
 Ecu ECU = {};
+
+Timer debug_info_timer = Timer(0, DEBUG_INTERVAL_MS);
 
 /* We only use soft resets in debug builds. In production builds they're treated as
  * safety failures. */
@@ -139,6 +144,12 @@ void loop() {
                 MotorCAN.write(*to_send);
             } else {
                 break;
+            }
+
+            if (debug_info_timer.shouldFire(current_time_ms)) {
+                DataCAN.write(create_code_hash_message(GIT_COMMIT_HASH_U64));
+                DataCAN.write(create_commit_author_message(GIT_COMMIT_AUTHOR));
+                DataCAN.write(create_uploader_message(GIT_UPLOADER));
             }
         }
     }

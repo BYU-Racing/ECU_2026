@@ -67,6 +67,17 @@ void write_f32_le(uint8_t* buf, float value) {
     write_u32_le(buf, as_u32);
 }
 
+void write_u64_le(uint8_t* buf, uint64_t value) {
+    buf[0] =  value        & 0xFF;
+    buf[1] = (value >>  8) & 0xFF;
+    buf[2] = (value >> 16) & 0xFF;
+    buf[3] = (value >> 24) & 0xFF;
+    buf[4] = (value >> 32) & 0xFF;
+    buf[5] = (value >> 40) & 0xFF;
+    buf[6] = (value >> 48) & 0xFF;
+    buf[7] = (value >> 56) & 0xFF;
+}
+
 bool parse_start_switch(CAN_message_t msg) {
     /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
      * We use the cast to extract the CAN message id from its name. */
@@ -586,7 +597,6 @@ CAN_message_t create_critical_fault_command(CriticalFault value) {
     write_u32_le(&new_message.buf[4], value.file_name_hash);
 
     return new_message;
-    
 }
 
 MotorControlCommand parse_motor_control_command(CAN_message_t msg) {
@@ -612,4 +622,29 @@ MotorControlCommand parse_motor_control_command(CAN_message_t msg) {
 
     return result;
 }
+
+CAN_message_t create_code_hash_message(uint64_t truncated_hash) {
+    CAN_message_t new_message = empty_can_message(MessageId::CodeHash, 8);
+    write_u64_le(&new_message.buf[0], truncated_hash);
+
+    return new_message;
+}
+
+static CAN_message_t create_string_message(MessageId id, const char* str) {
+    CAN_message_t msg = empty_can_message(id, 8);
+    for (uint8_t i = 0; i < 8; i++) {
+        msg.buf[i] = str[i];
+        if (str[i] == '\0') break;
+    }
+    return msg;
+}
+
+CAN_message_t create_commit_author_message(const char* author) {
+    return create_string_message(MessageId::CommitAuthor, author);
+}
+
+CAN_message_t create_uploader_message(const char* uploader) {
+    return create_string_message(MessageId::Uploader, uploader);
+}
+
 
