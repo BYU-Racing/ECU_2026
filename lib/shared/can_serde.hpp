@@ -85,6 +85,13 @@ enum class MessageId: uint32_t {
     ThrottleMin = 207,
     /* Set the maximum throttle value. */
     ThrottleMax = 208,
+
+    /* First 8 bytes of the git commit hash. */
+    CodeHash = 1024,
+    /* Author of the last git commit, null-terminated, up to 8 bytes. */
+    CommitAuthor = 1025,
+    /* Git username of whoever built/uploaded the firmware, null-terminated, up to 8 bytes. */
+    Uploader = 1026,
 };
 
 enum class RvcType: uint8_t {
@@ -440,6 +447,7 @@ uint32_t read_u32_le(const uint8_t* buf);
 void write_u32_le(uint8_t* buf, uint32_t value);
 float read_f32_le(uint8_t* buf);
 void write_f32_le(uint8_t* buf, float value);
+void write_u64_le(uint8_t* buf, uint64_t value);
 
 bool parse_start_switch(CAN_message_t msg);
 CAN_message_t create_start_switch(bool value);
@@ -476,3 +484,7 @@ MotorModIndexAndFlux parse_motor_mod_index_and_flux(CAN_message_t msg);
 int16_t parse_motor_torque_capability(CAN_message_t msg);
 CAN_message_t create_motor_control_command(MotorControlCommand value);
 MotorControlCommand parse_motor_control_command(CAN_message_t msg);
+
+CAN_message_t create_code_hash_message(uint64_t truncated_hash);
+CAN_message_t create_commit_author_message(const char* author);
+CAN_message_t create_uploader_message(const char* uploader);

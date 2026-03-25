@@ -9,6 +9,9 @@ constexpr uint32_t SOFT_RESET_LENGTH_MS = 2000;
 constexpr long SERIAL_BAUD_RATE = 115200;
 constexpr uint32_t CAN_BAUD_RATE = 250000;
 
+/* Interval between sending debug messages. */
+constexpr uint32_t DEBUG_INTERVAL_MS = 1000;
+
 /* Throttle constants */
 
 /* How long we tolerate between receiving pedal values until we panic. */
