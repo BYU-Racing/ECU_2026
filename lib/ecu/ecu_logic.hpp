@@ -72,12 +72,25 @@ class Pedals {
     /* The result from smoothing the throttle. */
     uint8_t smoothed_throttle = 0;
 
+    /* This is a PID, with the target as the current target torque, and the
+     * measurement as the last target. */
+    Pid throttle_pid = Pid(0, 0.2, 0.05, 0.0, 10.0);
+    double last_output = 0.0;
+    double pid_output = 0.0;
+
     /* If we've received both a new throttle 1 value, and a new throttle 2 value, then
      * this will calculate the new mapped throttle value (as a percentage in range [0, 100]).*/
     void maybeRecomputeMappedThrottle(uint32_t current_time_ms);
 
-    /* Internal helper function used to smooth the throttle through time. */
+    /* Smooth out throttle values by averaging out previous values. This
+     * is only for cleaning up the signal, _not_ for giving the driver
+     * a good experience (see `Pedals::throttlePostProcessing` for
+     * giving the driver a good time). */
     void smoothThrottle(uint32_t current_time_ms);
+
+    /* This function is responsible for the "feel" of the throttle.
+     * This currently includes the torque mapping and PID. */
+    void throttlePostProcessing(uint32_t current_time_ms);
 
     /* We don't immediately panic when an implausibility occurs, as the rules
      * allow us to tolerate an implausibility for up to 100 ms. See the 2026
@@ -93,9 +106,6 @@ public:
      * `std::nullopt`. For each message emitted, the caller should send
      * along the CAN bus. */
     std::optional<CAN_message_t> poll(uint32_t current_time_ms);
-
-    /* smooth torque */
-    int16_t smoothThrottle(uint32_t current_time);
 
     void handleStartupSequence(uint32_t current_time_ms);
 

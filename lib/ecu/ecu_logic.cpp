@@ -8,12 +8,10 @@
 #include "can_serde.hpp"
 #include "constants.hpp"
 
-/* Currently a stub. Implement the torque mapping here. */
-int16_t map_throttle_to_torque(uint16_t throttle_percent) {
+/* Currently a stub. Implement the torque mapping here. Returns in Nm, _not_ 0.1*Nm */
+static double map_throttle_to_torque(uint16_t throttle_percent) {
     int64_t result = map(throttle_percent, 0, 100, 0, MAX_TORQUE);
-    /* Make sure we can narrow the integer. */
-    SAFETY_ASSERT(result >= INT16_MIN && result <= INT16_MAX, AssertCode::IntegerOverflow);
-    return static_cast<int16_t>(result);
+    return static_cast<double>(result) / 10.0;
 }
 
 void Pedals::poll(uint32_t current_time_ms) {
@@ -65,6 +63,8 @@ void Pedals::poll(uint32_t current_time_ms) {
     }
 
     this->smoothThrottle(current_time_ms);
+
+    this->throttlePostProcessing(current_time_ms);
 }
 
 void Pedals::inputThrottleOnePosition(uint32_t current_time_ms, uint16_t value) {
@@ -98,7 +98,12 @@ bool Pedals::isBrakePressed() {
 }
 
 int16_t Pedals::getCurrentTorqueAmount() {
-    return map_throttle_to_torque(this->smoothed_throttle);
+    double cascadia_format = this->pid_output * 10.0;
+    /* The PID may undershoot, so we clamp it if it gets below 0. */
+    if (cascadia_format < 0.0) cascadia_format = 0.0;
+
+    SAFETY_ASSERT(cascadia_format <= INT16_MAX, AssertCode::IntegerOverflow);
+    return static_cast<int16_t>(cascadia_format);
 }
 
 void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
@@ -162,15 +167,7 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
 }
 
 void Pedals::smoothThrottle(uint32_t current_time_ms) {
-    /* Smooth out throttle values by averaging out previous values. */
-
     constexpr size_t torque_memory_len = sizeof(this->torque_memory) / sizeof(this->torque_memory[0]);
-
-    /* If we receive a value of 0, reset history and return 0. */
-    if (this->mapped_throttle == 0) {
-        memset(&this->torque_memory, 0, sizeof(this->torque_memory));
-        this->smoothed_throttle = 0;
-    }
 
     if (this->torque_memory_pacing.shouldFire(current_time_ms)) {
         /* Only cycle memory when it's been long enough. */
@@ -193,6 +190,13 @@ void Pedals::smoothThrottle(uint32_t current_time_ms) {
     SAFETY_ASSERT(averaged >= 0, AssertCode::IntegerOverflow);
 
     this->smoothed_throttle = averaged;
+}
+
+void Pedals::throttlePostProcessing(uint32_t current_time_ms) {
+    double torque_target = map_throttle_to_torque(this->smoothed_throttle);
+
+    this->pid_output = this->throttle_pid.nextValue(current_time_ms, torque_target, this->last_output);
+    this->last_output = this->pid_output;
 }
 
 /* This records that an implausibility happened. We don't immediately panic when

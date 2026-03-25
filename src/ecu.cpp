@@ -145,12 +145,12 @@ void loop() {
             } else {
                 break;
             }
-
-            if (debug_info_timer.shouldFire(current_time_ms)) {
-                DataCAN.write(create_code_hash_message(GIT_COMMIT_HASH_U64));
-                DataCAN.write(create_commit_author_message(GIT_COMMIT_AUTHOR));
-                DataCAN.write(create_uploader_message(GIT_UPLOADER));
-            }
         }
+    }
+
+    if (debug_info_timer.shouldFire(current_time_ms)) {
+        DataCAN.write(create_code_hash_message(GIT_COMMIT_HASH_U64));
+        DataCAN.write(create_commit_author_message(GIT_COMMIT_AUTHOR));
+        DataCAN.write(create_uploader_message(GIT_UPLOADER));
     }
 }
