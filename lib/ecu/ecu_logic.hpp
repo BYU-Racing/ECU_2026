@@ -108,6 +108,9 @@ private:
     /* Whether the car is switched on or not. */
     bool start_switch_on = false;
 
+    /* Brake and throttle cannot be pressed at the same time. See the 2026 rules, EV.4.7. */
+    bool throttle_and_brake_pressed = false;
+
     /* FIXME this is a hack to work around the start switch sensor. */
     bool last_start_switch_value = false;
     Trigger turn_off_timeout;

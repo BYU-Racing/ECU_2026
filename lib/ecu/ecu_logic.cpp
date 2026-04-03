@@ -301,19 +301,26 @@ std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
      * and if the brake is up. We don't enable the inverter until the
      * driver has lifted up the brake. */
 
+    if (this->throttle_and_brake_pressed) {
+        /* The driver previously pressed the throttle and brake at the same time, so this is
+        * the code that deals with potentially re-enabling once the throttle is low
+        * enough again. */
+       if (this->pedals.getThrottleValue() <= 5 && !this->pedals.isBrakePressed()) {
+           this->throttle_and_brake_pressed = false;
+        }
+    }
+    /* Brake and throttle cannot be pressed at the same time. See the 2026 rules, EV.4.7. */
+    if (this->pedals.getThrottleValue() >= 25 && this->pedals.isBrakePressed()) {
+        this->throttle_and_brake_pressed = true;
+    }
+
     bool inverter_enabled = false;
     int16_t torque_to_use = 0;
 
-    if (this->car_fully_on) {
+    if (this->car_fully_on && !this->throttle_and_brake_pressed) {
         inverter_enabled = true;
         torque_to_use = this->pedals.getCurrentTorqueAmount();
     }
-
-    /* Brake and throttle cannot be pressed at the same time. See the 2026 rules, EV.4.7. */
-    // FIXME this isn't working.
-#ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
-    SAFETY_ASSERT(!(this->pedals.getThrottleValue() > 25 && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottlePressed);
-#endif
 
     /* Pace how often we send a motor command by using a timer. Note, we still
      * send these messages, even when the inverter is off, so that the motor
