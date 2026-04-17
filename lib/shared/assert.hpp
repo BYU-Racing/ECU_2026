@@ -30,9 +30,12 @@
 
 /* Error codes for safety asserts */
 enum class AssertCode: uint8_t {
-    Unknown = 0,
-    BadMessage = 1,
-    IntegerOverflow = 2,
+    /* Note we have no value set to 0; this is intentional.
+     * Our current screen uses 0 as the default error code value,
+     * so it needs to have 0 as nothing wrong. */
+    Unknown = 1,
+    BadMessage = 2,
+    IntegerOverflow = 3,
     /* Codes 3-20 are reserved for future general messages. */
     BrakeAndThrottlePressed = 20,
     ThrottleOutOfRange = 21,
