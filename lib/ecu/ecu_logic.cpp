@@ -293,6 +293,12 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
     }
 };
 
+GpioState Ecu::getGpioState(uint32_t current_time_ms) {
+    return GpioState{
+        .brake_light_on = this->pedals.isBrakePressed(),
+    };
+}
+
 std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
     this->handleStartupSequence(current_time_ms);
     this->pedals.poll(current_time_ms);

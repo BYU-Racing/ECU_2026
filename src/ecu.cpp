@@ -89,9 +89,11 @@ void assert_failed_handler(AssertLevel level, LineInfo info, AssertCode error_co
 }
 
 void setup() {
-  // First things first, register the panic handler. If something goes
+    // First things first, register the panic handler. If something goes
     // wrong during setup, we'll wind everything down.
     register_assert_failed_handler(assert_failed_handler);
+
+    pinMode(BRAKE_LIGHT_PIN, OUTPUT);
 
     Serial.begin(SERIAL_BAUD_RATE);
 
@@ -152,5 +154,8 @@ void loop() {
                 DataCAN.write(create_uploader_message(GIT_UPLOADER));
             }
         }
+
+        auto state = ECU.getGpioState(current_time_ms);
+        digitalWrite(BRAKE_LIGHT_PIN, state.brake_light_on ? HIGH : LOW);
     }
 }

@@ -85,6 +85,10 @@ class Pedals {
     void noteImplausibility(uint32_t current_time_ms, LineInfo line_info, AssertCode code);
 };
 
+struct GpioState {
+    bool brake_light_on;
+};
+
 class Ecu {
 public:
     void processMessage(uint32_t current_time_ms, CAN_message_t msg);
@@ -93,6 +97,8 @@ public:
      * `std::nullopt`. For each message emitted, the caller should send
      * along the CAN bus. */
     std::optional<CAN_message_t> poll(uint32_t current_time_ms);
+
+    GpioState Ecu::getGpioState(uint32_t current_time_ms);
 
     /* smooth torque */
     int16_t smoothThrottle(uint32_t current_time);

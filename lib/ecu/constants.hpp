@@ -5,6 +5,9 @@
 /* ASSERTS */
 constexpr uint32_t SOFT_RESET_LENGTH_MS = 2000;
 
+/* PINS */
+constexpr uint8_t BRAKE_LIGHT_PIN = 13;
+
 /* COMMUNICATIONS */
 constexpr long SERIAL_BAUD_RATE = 115200;
 constexpr uint32_t CAN_BAUD_RATE = 250000;
