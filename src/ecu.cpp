@@ -98,6 +98,8 @@ void setup() {
     Serial.println("============================================");
 }
 
+Timer debug_pacing(0, 500);
+
 void loop() {
 #ifdef ENABLE_DEBUGGING
     /* Save our current location, so if a soft assert fails, we'll go back to here. */
@@ -141,5 +143,11 @@ void loop() {
                 break;
             }
         }
+    }
+
+    if (debug_pacing.shouldFire(current_time_ms)) {
+#ifdef ENABLE_DEBUGGING
+        ECU.printState();
+#endif
     }
 }
