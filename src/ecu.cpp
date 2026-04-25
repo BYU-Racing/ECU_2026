@@ -19,7 +19,8 @@ FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> MotorCAN;
 
 Ecu ECU = {};
 
-Timer debug_info_timer = Timer(0, DEBUG_INTERVAL_MS);
+Timer broadcast_build_info_timer(0, BROADCAST_INFO_INTERVAL_MS);
+Timer debug_pacing(0, 500);
 
 /* We only use soft resets in debug builds. In production builds they're treated as
  * safety failures. */
@@ -148,9 +149,15 @@ void loop() {
         }
     }
 
-    if (debug_info_timer.shouldFire(current_time_ms)) {
+    if (broadcast_build_info_timer.shouldFire(current_time_ms)) {
         DataCAN.write(create_code_hash_message(GIT_COMMIT_HASH_U64));
         DataCAN.write(create_commit_author_message(GIT_COMMIT_AUTHOR));
         DataCAN.write(create_uploader_message(GIT_UPLOADER));
     }
+
+#ifdef ENABLE_DEBUGGING
+    if (debug_pacing.shouldFire(current_time_ms)) {
+        ECU.printState();
+    }
+#endif
 }

@@ -33,6 +33,7 @@ class Pedals {
     uint8_t getThrottleValue();
     bool isBrakePressed();
     int16_t getCurrentTorqueAmount();
+    void printState();
 
   private:
     std::optional<ImplausibilityDetails> implausibility = std::nullopt;
@@ -107,6 +108,7 @@ public:
      * `std::nullopt`. For each message emitted, the caller should send
      * along the CAN bus. */
     std::optional<CAN_message_t> poll(uint32_t current_time_ms);
+    void printState();
 
     void handleStartupSequence(uint32_t current_time_ms);
 

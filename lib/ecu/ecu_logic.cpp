@@ -157,7 +157,7 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
 
         // FIXME actually average the values.
 #ifdef FIXME_HACKS_TO_GET_THINGS_WORKING
-        int64_t average = throttle_1_percent;
+        int64_t average = throttle_2_percent;
 #else
         int64_t average = (throttle_1_percent + throttle_2_percent) / 2;
 #endif
@@ -212,7 +212,32 @@ void Pedals::noteImplausibility(uint32_t current_time_ms, LineInfo line_info, As
     this->implausibility = details;
 }
 
+void Pedals::printState() {
+    PRINTF("Pedals:\n");
+    if (this->throttle_1_pos.has_value()) {
+        PRINTF("  throttle_1_pos: %u\n", *this->throttle_1_pos);
+    } else {
+        PRINTF("  throttle_1_pos: (none)\n");
+    }
+    if (this->throttle_2_pos.has_value()) {
+        PRINTF("  throttle_2_pos: %u\n", *this->throttle_2_pos);
+    } else {
+        PRINTF("  throttle_2_pos: (none)\n");
+    }
+    PRINTF("  mapped_throttle: %u\n", this->mapped_throttle);
+    PRINTF("  smoothed_throttle: %u\n", this->smoothed_throttle);
+    PRINTF("  brake_pos: %u\n", this->brake_pos);
+    PRINTF("  implausibility: %s\n", this->implausibility.has_value() ? "yes" : "no");
+}
+
 /* Ecu implementation. */
+void Ecu::printState() {
+    PRINTF("Ecu:\n");
+    PRINTF("  car_fully_on: %s\n", this->car_fully_on ? "yes" : "no");
+    PRINTF("  start_switch_on: %s\n", this->start_switch_on ? "yes" : "no");
+    this->pedals.printState();
+}
+
 void Ecu::handleStartupSequence(uint32_t current_time_ms) {
     bool debounced_switch;
 

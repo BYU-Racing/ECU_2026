@@ -9,8 +9,8 @@ constexpr uint32_t SOFT_RESET_LENGTH_MS = 2000;
 constexpr long SERIAL_BAUD_RATE = 115200;
 constexpr uint32_t CAN_BAUD_RATE = 250000;
 
-/* Interval between sending debug messages. */
-constexpr uint32_t DEBUG_INTERVAL_MS = 1000;
+/* Interval between broadcasting the system build info. */
+constexpr uint32_t BROADCAST_INFO_INTERVAL_MS = 1000;
 
 /* Throttle constants */
 
@@ -33,12 +33,12 @@ constexpr int16_t THROTTLE1_MIN_OUT_OF_RANGE = 620;
 constexpr int16_t THROTTLE1_MAX_OUT_OF_RANGE = 970;
 
 /* THROTTLE2_LOW and THROTTLE2_HIGH can be reversed. */
-constexpr int16_t THROTTLE2_LOW = 405;
-constexpr int16_t THROTTLE2_HIGH = 325;
+constexpr int16_t THROTTLE2_LOW = 420;
+constexpr int16_t THROTTLE2_HIGH = 650;
 /* If the throttle 2 values is lower or higher than this range, we panic.
  * Used to comply with T.4.2.10. */
 constexpr int16_t THROTTLE2_MIN_OUT_OF_RANGE = 150;
-constexpr int16_t THROTTLE2_MAX_OUT_OF_RANGE = 190;
+constexpr int16_t THROTTLE2_MAX_OUT_OF_RANGE = 850;
 
 /* Maximum allowed difference between the two throttles' values,
  * after those values have been mapped to [THROTTLE[X]_MIN, THROTTLE[X]_MAX]. */
