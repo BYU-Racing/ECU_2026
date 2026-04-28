@@ -120,4 +120,17 @@ private:
 
     /* Timer to pace how often we send motor control commands. */
     Timer motor_control_pacing = Timer(0, 15);
+
+    /* VSM state */
+    /* States:
+    * 0: VSM Start State
+    * 1: Pre-charge Init State
+    * 2: Pre-charge Active State
+    * 3: Pre-charge Complete State
+    * 4: VSM Wait State
+    * 5: VSM Ready State
+    * 6: Motor Running State
+    * 7: Blink Fault Code State
+    */
+    VsmState vsm_state;
 };
