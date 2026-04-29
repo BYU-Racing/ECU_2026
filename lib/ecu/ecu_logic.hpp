@@ -101,8 +101,10 @@ public:
 
     void handleStartupSequence(uint32_t current_time_ms);
 
-private:
-    Pedals pedals;
+    /* update precharge_complete from vsm_state */
+    void updateVSMState();
+
+    private: Pedals pedals;
 
     /* Whether the car is fully on (not starting up). */
     bool car_fully_on = false;
@@ -120,4 +122,7 @@ private:
 
     /* Timer to pace how often we send motor control commands. */
     Timer motor_control_pacing = Timer(0, 15);
+
+    /* Whether the inverter pre-charge is complete */
+    bool precharge_complete = false;
 };

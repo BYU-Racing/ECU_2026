@@ -267,18 +267,19 @@ void Ecu::handleStartupSequence(uint32_t current_time_ms) {
     if (this->car_fully_on) {
         /* No need to do the motor startup sequence if the car is already fully started. */
     } else {
-        /* Startup sequence needed. In order to start up the motor, we need two things:
+        /* Startup sequence needed. In order to start up the motor, we need three things:
          *   1. The brake needs to be down.
          *   2. The start switch needs to be on.
+         *   3. Inverter has reached Pre-charge Complete state (3)
          * Once these preconditions are met, we can do the startup sequence.
          * We will also wait two seconds before fully starting up, or abort if
          * one of the preconditions stops holding. */
 
         /* FIXME right now we ignore the brake value. */
 #ifdef FIXME_HACKS_TO_GET_THINGS_WORKING
-        if (debounced_switch) {
+        if (debounced_switch && this->precharge_complete) {
 #else
-        if (this->pedals.isBrakePressed() && debounced_switch) {
+        if (this->pedals.isBrakePressed() && debounced_switch && this->precharge_complete) {
 #endif
             if (!this->startup_countdown.started()) {
                 this->startup_countdown.start(current_time_ms, STARTUP_DELAY_MS);
@@ -303,6 +304,17 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
     switch (static_cast<MessageId>(msg.id)) {
         case MessageId::StartSwitch:
             this->start_switch_on = parse_start_switch(msg);
+            break;
+        // To check VSM internal state
+        case MessageId::InternalStates:
+            VsmState vsm_state = parse_motor_internal_states(msg).vsm_state;
+            /* if the vsm state changes then update precharge_complete boolean */
+            if (vsm_state == VsmState::PreChargeComplete || vsm_state == VsmState::VsmWait
+                || vsm_state == VsmState::VsmReady || vsm_state == VsmState::MotorRunning) {
+                this->precharge_complete = true;
+            } else {
+                this->precharge_complete = false;
+            }
             break;
         case MessageId::ThrottleOnePosition:
             this->pedals.inputThrottleOnePosition(current_time_ms, parse_throttle_one_position(msg));
@@ -343,6 +355,7 @@ std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
     /* Pace how often we send a motor command by using a timer. Note, we still
      * send these messages, even when the inverter is off, so that the motor
      * gets shutdown messages. */
+    /* ALSO check inverter state and only send motor command once pre-charge is complete */
     if (this->motor_control_pacing.shouldFire(current_time_ms)) {
         MotorControlCommand cmd;
         cmd.torque = torque_to_use;
