@@ -311,9 +311,9 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
             /* if the vsm state changes then update precharge_complete boolean */
             if (vsm_state == VsmState::PreChargeComplete || vsm_state == VsmState::VsmWait
                 || vsm_state == VsmState::VsmReady || vsm_state == VsmState::MotorRunning) {
-                precharge_complete = true;
+                this->precharge_complete = true;
             } else {
-                precharge_complete = false;
+                this->precharge_complete = false;
             }
             break;
         case MessageId::ThrottleOnePosition:
