@@ -123,8 +123,6 @@ public:
     /* Timer to pace how often we send motor control commands. */
     Timer motor_control_pacing = Timer(0, 15);
 
-    /* VSM state */
-    VsmState vsm_state;
     /* Whether the inverter pre-charge is complete */
     bool precharge_complete = false;
 };
