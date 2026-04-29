@@ -6,3 +6,4 @@
 .venv
 include/generated/**
 __pycache__
+logs/
