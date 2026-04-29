@@ -299,6 +299,21 @@ void Ecu::handleStartupSequence(uint32_t current_time_ms) {
     }
 }
 
+void Ecu::updateVSMState() {
+    /* if the vsm state changes then update precharge_complete boolean */
+    if (vsm_state == VsmState::PreChargeComplete || 
+        vsm_state == VsmState::VsmWait || 
+        vsm_state == VsmState::VsmReady ||
+        vsm_state == VsmState::MotorRunning) 
+        {
+            precharge_complete = true;
+        }
+    else
+    {
+        precharge_complete = false;
+    }
+}
+
 void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
     /* If we received a CAN message, update the corresponding value. */
     switch (static_cast<MessageId>(msg.id)) {
@@ -308,6 +323,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
         // To check VSM internal state
         case MessageId::InternalStates:
             this->vsm_state = parse_motor_internal_states(msg).vsm_state;
+            break;
         case MessageId::ThrottleOnePosition:
             this->pedals.inputThrottleOnePosition(current_time_ms, parse_throttle_one_position(msg));
             break;
@@ -324,6 +340,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
 
 std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
     this->handleStartupSequence(current_time_ms);
+    this->updateVSMState();
     this->pedals.poll(current_time_ms);
 
     /* Engine is enabled if all the preconditions of `car_fully_on` passed,
@@ -348,7 +365,7 @@ std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
      * send these messages, even when the inverter is off, so that the motor
      * gets shutdown messages. */
     /* ALSO check inverter state and only send motor command once pre-charge is complete */
-    if (this->motor_control_pacing.shouldFire(current_time_ms) && vsm_state >= VsmState::PreChargeComplete) {
+    if (this->motor_control_pacing.shouldFire(current_time_ms) && precharge_complete) {
         MotorControlCommand cmd;
         cmd.torque = torque_to_use;
         cmd.speed = 0;

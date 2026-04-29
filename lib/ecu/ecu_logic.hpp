@@ -101,8 +101,10 @@ public:
 
     void handleStartupSequence(uint32_t current_time_ms);
 
-private:
-    Pedals pedals;
+    /* update precharge_complete from vsm_state */
+    void updateVSMState();
+
+    private: Pedals pedals;
 
     /* Whether the car is fully on (not starting up). */
     bool car_fully_on = false;
@@ -122,15 +124,7 @@ private:
     Timer motor_control_pacing = Timer(0, 15);
 
     /* VSM state */
-    /* States:
-    * 0: VSM Start State
-    * 1: Pre-charge Init State
-    * 2: Pre-charge Active State
-    * 3: Pre-charge Complete State
-    * 4: VSM Wait State
-    * 5: VSM Ready State
-    * 6: Motor Running State
-    * 7: Blink Fault Code State
-    */
     VsmState vsm_state;
+    /* Whether the inverter pre-charge is complete */
+    bool precharge_complete = false;
 };
