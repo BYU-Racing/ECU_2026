@@ -31,10 +31,8 @@ void setup()
     dataCAN.setBaudRate(CAN_BAUD_RATE);
     Serial.println("START");
 
-    pinMode(THROTTLE_1_PIN, INPUT_PULLDOWN);
-    pinMode(THROTTLE_2_PIN, INPUT_PULLDOWN);
-    pinMode(BRAKE_PIN, INPUT_PULLDOWN);
-    /* SWITCH_PIN is an analog input, so we don't need to set its pin mode. */
+    /* The throttle and brake are analog inputs, so we don't need to set pinMode for them. */
+    pinMode(SWITCH_PIN, INPUT_PULLDOWN);
 }
 
 void loop()
