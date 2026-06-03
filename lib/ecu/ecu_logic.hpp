@@ -112,9 +112,6 @@ public:
 
     void handleStartupSequence(uint32_t current_time_ms);
 
-    /* update precharge_complete from vsm_state */
-    void updateVSMState();
-
     private: Pedals pedals;
 
     /* Whether the car is fully on (not starting up). */
