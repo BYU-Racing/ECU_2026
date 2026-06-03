@@ -28,17 +28,18 @@ constexpr uint32_t ALLOWED_IMPLAUSILIBTY_LENGTH_MS = 60;
 constexpr int16_t THROTTLE1_LOW = 660;
 constexpr int16_t THROTTLE1_HIGH = 950;
 /* If the throttle 1 values is lower or higher than this range, we panic.
- * Used to comply with T.4.2.10. */
+ * Used to comply with T.4.2.10, 2026 rules. */
 constexpr int16_t THROTTLE1_MIN_OUT_OF_RANGE = 620;
 constexpr int16_t THROTTLE1_MAX_OUT_OF_RANGE = 970;
 
-/* THROTTLE2_LOW and THROTTLE2_HIGH can be reversed. */
-constexpr int16_t THROTTLE2_LOW = 420;
+/* THROTTLE2_LOW and THROTTLE2_HIGH can be reversed. If outside this range, the
+ * throttle will clamp to 0%-100%. */
+constexpr int16_t THROTTLE2_LOW = 430;
 constexpr int16_t THROTTLE2_HIGH = 650;
-/* If the throttle 2 values is lower or higher than this range, we panic.
- * Used to comply with T.4.2.10. */
-constexpr int16_t THROTTLE2_MIN_OUT_OF_RANGE = 150;
-constexpr int16_t THROTTLE2_MAX_OUT_OF_RANGE = 850;
+/* If the throttle 2 value is lower or higher than this range, we panic.
+ * Used to comply with T.4.2.10, 2026 rules. */
+constexpr int16_t THROTTLE2_MIN_OUT_OF_RANGE = 350;
+constexpr int16_t THROTTLE2_MAX_OUT_OF_RANGE = 725;
 
 /* Maximum allowed difference between the two throttles' values,
  * after those values have been mapped to [THROTTLE[X]_MIN, THROTTLE[X]_MAX]. */

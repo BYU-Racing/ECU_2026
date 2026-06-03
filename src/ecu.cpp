@@ -98,6 +98,8 @@ void setup() {
 
     MotorCAN.begin();
     MotorCAN.setBaudRate(CAN_BAUD_RATE);
+    DataCAN.begin();
+    DataCAN.setBaudRate(CAN_BAUD_RATE);
 
     Serial.println("============================================");
     Serial.println("==========Motor CAN initialized=============");
@@ -132,27 +134,26 @@ void loop() {
 
         /* Make sure to reset the trigger when we're done. */
         SOFT_RESET_TRIGGER.triggerReached(millis());
-    }
-#else
-    if (false) {
+
+        /* Return early, so nothing else runs after this. */
+        return;
     }
 #endif
-    else {
-        /* Generate all outgoing messages and send each. */
-        while (true) {
-            std::optional<CAN_message_t> to_send = ECU.poll(current_time_ms);
-            if (to_send.has_value()) {
-                MotorCAN.write(*to_send);
-            } else {
-                break;
-            }
+
+    /* Generate all outgoing messages and send each. */
+    while (true) {
+        std::optional<CAN_message_t> to_send = ECU.poll(current_time_ms);
+        if (to_send.has_value()) {
+            MotorCAN.write(*to_send);
+        } else {
+            break;
         }
     }
 
     if (broadcast_build_info_timer.shouldFire(current_time_ms)) {
-        DataCAN.write(create_code_hash_message(GIT_COMMIT_HASH_U64));
-        DataCAN.write(create_commit_author_message(GIT_COMMIT_AUTHOR));
-        DataCAN.write(create_uploader_message(GIT_UPLOADER));
+        MotorCAN.write(create_code_hash_message(GIT_COMMIT_HASH_U64));
+        MotorCAN.write(create_commit_author_message(GIT_COMMIT_AUTHOR));
+        MotorCAN.write(create_uploader_message(GIT_UPLOADER));
     }
 
 #ifdef ENABLE_DEBUGGING

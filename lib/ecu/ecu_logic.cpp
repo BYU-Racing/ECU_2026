@@ -45,14 +45,14 @@ void Pedals::poll(uint32_t current_time_ms) {
 #endif
 
     if (this->implausibility.has_value()) {
-        ImplausibilityDetails details = *this->implausibility;
-
         if (last_implausibility.has_value()) {
             /* Restore the original implausibility information, so we have
-             * both the time and information that the first implausibility
-             * happened at. */
-            this->implausibility = *last_implausibility;
+            * both the time and information that the first implausibility
+            * happened at. */
+           this->implausibility = *last_implausibility;
         }
+
+        ImplausibilityDetails details = *this->implausibility;
 
         /* Use this to panic if an implausibility has occured for too long. */
         if (current_time_ms - details.happened_at_ms > ALLOWED_IMPLAUSILIBTY_LENGTH_MS) {
@@ -235,6 +235,7 @@ void Ecu::printState() {
     PRINTF("Ecu:\n");
     PRINTF("  car_fully_on: %s\n", this->car_fully_on ? "yes" : "no");
     PRINTF("  start_switch_on: %s\n", this->start_switch_on ? "yes" : "no");
+    PRINTF("  precharge_complete: %s\n", this->precharge_complete ? "yes" : "no");
     this->pedals.printState();
 }
 
@@ -312,7 +313,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
             this->start_switch_on = parse_start_switch(msg);
             break;
         // To check VSM internal state
-        case MessageId::InternalStates:
+        case MessageId::InternalStates: {
             VsmState vsm_state = parse_motor_internal_states(msg).vsm_state;
             /* if the vsm state changes then update precharge_complete boolean */
             if (vsm_state == VsmState::PreChargeComplete || vsm_state == VsmState::VsmWait
@@ -322,6 +323,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
                 this->precharge_complete = false;
             }
             break;
+        }
         case MessageId::ThrottleOnePosition:
             this->pedals.inputThrottleOnePosition(current_time_ms, parse_throttle_one_position(msg));
             break;
