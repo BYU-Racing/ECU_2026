@@ -65,8 +65,7 @@ constexpr uint32_t STARTUP_DELAY_MS = 2000;  /* 2 seconds */
 
 constexpr int16_t TORQUE_FLOOR = 10;
 
-/* MAX TORQUE */
-/* N * 0.1 */
+/* MAX TORQUE in CASCADIA format, 1 = 0.1Nm */
 constexpr int16_t MAX_TORQUE = 1000;
  
 /* Drive Modes */

@@ -101,6 +101,9 @@ int16_t Pedals::getCurrentTorqueAmount() {
     double cascadia_format = this->pid_output * 10.0;
     /* The PID may undershoot, so we clamp it if it gets below 0. */
     if (cascadia_format < 0.0) cascadia_format = 0.0;
+    if (cascadia_format > static_cast<double>(MAX_TORQUE)) {
+        cascadia_format = static_cast<double>(MAX_TORQUE);
+    }
 
     SAFETY_ASSERT(cascadia_format <= INT16_MAX, AssertCode::IntegerOverflow);
     return static_cast<int16_t>(cascadia_format);
