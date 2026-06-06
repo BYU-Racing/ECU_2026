@@ -29,6 +29,16 @@ void write_u16_le(uint8_t* buf, uint16_t value) {
     buf[1] = value >> 8;
 }
 
+uint16_t read_u16_be(uint8_t* buf) {
+    /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises. */
+    return (static_cast<uint16_t>(buf[0]) << 8) | buf[1];
+}
+
+void write_u16_be(uint8_t* buf, uint16_t value) {
+    buf[0] = value >> 8;
+    buf[1] = value & 0xFF;
+}
+
 /* i = signed int, 16 = 16 bits, le = little endian. */
 int16_t read_i16_le(uint8_t* buf) {
     return static_cast<int16_t>(read_u16_le(buf));
