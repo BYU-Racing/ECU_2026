@@ -16,6 +16,8 @@ constexpr uint32_t CHARGER_RESPONSE_ID = 0x18FF50E5;
 
 /* We add this so we can use SAFETY_ASSERT for debugging. */
 void assert_failed_handler(AssertLevel level, LineInfo info, AssertCode error_code) {
+    (void)level; /* To get the warnings to go away that says `level` isn't used. */
+
     while (true) {
         Serial.printf("Assertion failed! In file %s:%d with error code %d\n", info.filename, info.line_no, error_code);
         Serial.printf("File hash %lu\n", (unsigned long) str_hash(info.filename));
@@ -45,6 +47,10 @@ void setup()
 
 void loop()
 {
+    Serial.print("Time since boot: ");
+    Serial.print(static_cast<double>(millis()) / 1000.0);
+    Serial.println("s");
+
     /* Part one of message: max voltage. */
     uint16_t max_voltage_dV = 4450; /* In decivolts. */
     /* Part two of message: max current. */
@@ -102,10 +108,10 @@ void loop()
         uint8_t status_flags = charger_response.buf[4];
 
         Serial.print("Charger reported voltage of ");
-        Serial.print(static_cast<double>(max_voltage_dV) / 10.0);
+        Serial.print(static_cast<double>(output_voltage) / 10.0);
         Serial.println("V");
         Serial.print("Charger reported current of ");
-        Serial.print(static_cast<double>(max_current_dA) / 10.0);
+        Serial.print(static_cast<double>(output_current) / 10.0);
         Serial.println("A");
         Serial.print("Charger reported flags of 0x");
         Serial.println(status_flags, 16);
