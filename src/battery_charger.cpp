@@ -79,9 +79,9 @@ void loop()
     write_u16_be(&charging_msg.buf[0], max_voltage_dV);
     write_u16_be(&charging_msg.buf[2], max_current_dA);
     if (charging_enabled) {
-        charging_msg.buf[4] = 1;
-    } else {
         charging_msg.buf[4] = 0;
+    } else {
+        charging_msg.buf[4] = 1;
     }
     battery_can.write(charging_msg);
 
