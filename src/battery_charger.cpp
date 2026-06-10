@@ -73,6 +73,10 @@ void loop()
         CAN_message_t charging_msg = {};
         charging_msg.len = 8;
         charging_msg.id = CHARGER_COMMAND_ID;
+        // configure for extended CAN ID
+        charging_msg.flags.extended = 1;
+        // Normal data frame
+        charging_msg.flags.remote = 0;
         write_u16_be(&charging_msg.buf[0], max_voltage_dV);
         write_u16_be(&charging_msg.buf[2], max_current_dA);
         if (charging_enabled) {
