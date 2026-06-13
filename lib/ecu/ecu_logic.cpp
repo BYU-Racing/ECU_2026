@@ -292,6 +292,12 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
             }
             break;
         }
+        // check the BMS state and fault if BMS status is ERROR
+        case MessageId::BMSStatus:
+            if (!parse_bms_status(msg)) {
+                SAFETY_ASSERT(false, AssertCode::BMSFault);
+            }
+            break;
         case MessageId::ThrottleOnePosition:
             this->pedals.inputThrottleOnePosition(current_time_ms, parse_throttle_one_position(msg));
             break;

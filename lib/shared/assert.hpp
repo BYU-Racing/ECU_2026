@@ -43,6 +43,10 @@ enum class AssertCode: uint8_t {
     /* If it's been too long since we've received a pedal value, we panic.
      * T.4.2.11(b) 2026 rules */
     PedalTimeout = 23,
+    /* This should never be necessary, but if the BMS faults and the hardware 
+     * does not pull the shutdown circuit, then the ECU should fault and the car
+     * should not be sending commnands to the motor. */
+    BMSFault = 24,
 };
 
 /* Captures the filename and file. I wish I could do this without a macro,

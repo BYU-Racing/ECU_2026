@@ -23,6 +23,9 @@ enum class MessageId: uint32_t {
     Gps = 9,
     Lap = 10,
 
+    /* BMS status message, see internal docs for details. */
+    BMSStatus = 112,
+
     /* Motor messages, see internal docs for details. */
     /* Temperatures of Phase A, B, C, and Gate Driver Board. */
     TemperaturesOne = 160,
@@ -92,6 +95,13 @@ enum class MessageId: uint32_t {
     CommitAuthor = 1025,
     /* Git username of whoever built/uploaded the firmware, null-terminated, up to 8 bytes. */
     Uploader = 1026,
+};
+
+enum class BMSStatusState: uint8_t {
+    Disconnected = 0,
+    Good = 1,
+    Warning = 2,
+    Error = 3,
 };
 
 enum class RvcType: uint8_t {
@@ -449,6 +459,7 @@ float read_f32_le(uint8_t* buf);
 void write_f32_le(uint8_t* buf, float value);
 void write_u64_le(uint8_t* buf, uint64_t value);
 
+bool parse_bms_status(CAN_message_t msg);
 bool parse_start_switch(CAN_message_t msg);
 CAN_message_t create_start_switch(bool value);
 uint16_t parse_throttle_one_position(CAN_message_t msg);

@@ -78,6 +78,17 @@ void write_u64_le(uint8_t* buf, uint64_t value) {
     buf[7] = (value >> 56) & 0xFF;
 }
 
+bool parse_bms_status(CAN_message_t msg) {
+    /* we only care if the BMS status is ERROR, thus we only care about the first two bits of the msg 
+     * which is the state of the BMS */
+    uint8_t bms_status = (msg.buf[0] & 0xC0) >> 6;
+    if (bms_status == 3) {
+        return false;
+    } else {
+        return true;
+    }
+} 
+
 bool parse_start_switch(CAN_message_t msg) {
     /* Why use `static_cast`? You can think of it as a normal cast, but with fewer surprises.
      * We use the cast to extract the CAN message id from its name. */
