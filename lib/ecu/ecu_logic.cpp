@@ -229,6 +229,8 @@ void Ecu::printState() {
 }
 
 void Ecu::handleStartupSequence(uint32_t current_time_ms) {
+    bool car_fully_on_before = this->car_fully_on;
+
     /* Car startup sequence. */
     if (this->car_fully_on) {
         /* No need to do the motor startup sequence if the car is already fully started. */
@@ -258,6 +260,18 @@ void Ecu::handleStartupSequence(uint32_t current_time_ms) {
         /* Pretty self-explanatory: if the start switch turns off, the car turns off. */
         this->car_fully_on = false;
     }
+
+    if (!car_fully_on_before && this->car_fully_on) {
+        /* We just went from the car from being off to being on. This means that 
+         * we now need to sound the horn for 2 seconds. */
+        this->horn_on = true;
+        this->horn_off_trigger.start(current_time_ms, 2000);
+    }
+
+    /* Turn the horn off afterwards. */
+    if (this->horn_off_trigger.triggerReached(current_time_ms)) {
+        this->horn_on = false;
+    }
 }
 
 void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
@@ -286,13 +300,21 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
             break;
         case MessageId::BrakePressure:
             this->pedals.inputBrakePosition(current_time_ms, parse_brake_pressure(msg));
+            this->brake_light_on = this->pedals.isBrakePressed();
             break;
         default:
             break;
     }
 };
 
-std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
+GpioState Ecu::pollGpioState(uint32_t current_time_ms) {
+    GpioState result;
+    result.horn_on = this->horn_on;
+    result.brake_light_on = this->brake_light_on;
+    return result;
+}
+
+std::optional<CAN_message_t> Ecu::pollCan(uint32_t current_time_ms) {
     this->handleStartupSequence(current_time_ms);
     this->pedals.poll(current_time_ms);
 

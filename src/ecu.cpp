@@ -22,16 +22,7 @@ Ecu ECU = {};
 Timer broadcast_build_info_timer(0, BROADCAST_INFO_INTERVAL_MS);
 Timer debug_pacing(0, 500);
 
-/* We only use soft resets in debug builds. In production builds they're treated as
- * safety failures. */
-#ifdef ENABLE_DEBUGGING
-/* If a soft assert fails, this is the timeout before we try continuing to run the system. */
-Trigger SOFT_RESET_TRIGGER = {};
-/* This lets us jump back to the top of the loop if a soft assert ever fails. */
-jmp_buf soft_assert_failed_goto_start_of_loop;
-#endif
-
-void safety_assert_failed_handler(LineInfo info, AssertCode error_code) {
+void assert_failed_handler(AssertLevel level, LineInfo info, AssertCode error_code) {
     /* Shut everything down. */
     CAN_message_t shutdown_message = empty_can_message(MessageId::ControlCommand, 8);
     /* `empty_can_message` is guaranteed to generate a message full of zeroes,
@@ -59,36 +50,6 @@ void safety_assert_failed_handler(LineInfo info, AssertCode error_code) {
     }
 }
 
-#ifdef ENABLE_DEBUGGING
-void soft_assert_failed_handler(LineInfo info, AssertCode error_code) {
-    /* Be sure to let us know if a soft assert failed. */
-    Serial.printf("Soft assertion failed! In file %s:%d with error code %d\n", info.filename, info.line_no, error_code);
-    /* Start the reset trigger. */
-    SOFT_RESET_TRIGGER.start(millis(), SOFT_RESET_LENGTH_MS);
-    longjmp(soft_assert_failed_goto_start_of_loop, 0);
-}
-#endif
-
-void assert_failed_handler(AssertLevel level, LineInfo info, AssertCode error_code) {
-#ifdef ENABLE_DEBUGGING
-    switch (level) {
-        case AssertLevel::Safety:
-            safety_assert_failed_handler(info, error_code);
-            break;
-        case AssertLevel::Soft:
-            soft_assert_failed_handler(info, error_code);
-            break;
-    }
-#else
-    switch (level) {
-        case AssertLevel::Safety:
-        case AssertLevel::Soft:
-            safety_assert_failed_handler(file, line, error_code);
-            break;
-    }
-#endif
-}
-
 void setup() {
   // First things first, register the panic handler. If something goes
     // wrong during setup, we'll wind everything down.
@@ -101,17 +62,15 @@ void setup() {
     DataCAN.begin();
     DataCAN.setBaudRate(CAN_BAUD_RATE);
 
+    pinMode(HORN_PIN, OUTPUT);
+    pinMode(BRAKE_LIGHT_PIN, OUTPUT);
+
     Serial.println("============================================");
     Serial.println("==========Motor CAN initialized=============");
     Serial.println("============================================");
 }
 
 void loop() {
-#ifdef ENABLE_DEBUGGING
-    /* Save our current location, so if a soft assert fails, we'll go back to here. */
-    setjmp(soft_assert_failed_goto_start_of_loop);
-#endif
-
     /* The ECU does not keep track of what time it is, nor does it use `millis`,
      * so we always have to tell it what time it is. */
     uint32_t current_time_ms = millis();
@@ -122,33 +81,19 @@ void loop() {
         ECU.processMessage(current_time_ms, rmsg);
     }
 
-#ifdef ENABLE_DEBUGGING
-    if (SOFT_RESET_TRIGGER.started()) {
-        /* We're currently in a soft reset. We bypass the normal ECU messages
-         * and shut off the motor until the soft reset finishes. */
-
-         /* Shut the motor off. */
-        CAN_message_t shutdown_message = empty_can_message(MessageId::ControlCommand, 8);
-        MotorCAN.write(shutdown_message);
-        delay(10); /* Don't oversaturate the CAN bus. */
-
-        /* Make sure to reset the trigger when we're done. */
-        SOFT_RESET_TRIGGER.triggerReached(millis());
-
-        /* Return early, so nothing else runs after this. */
-        return;
-    }
-#endif
-
     /* Generate all outgoing messages and send each. */
     while (true) {
-        std::optional<CAN_message_t> to_send = ECU.poll(current_time_ms);
+        std::optional<CAN_message_t> to_send = ECU.pollCan(current_time_ms);
         if (to_send.has_value()) {
             MotorCAN.write(*to_send);
         } else {
             break;
         }
     }
+
+    auto state = ECU.pollGpioState(current_time_ms);
+    digitalWrite(HORN_PIN, state.horn_on);
+    digitalWrite(BRAKE_LIGHT_PIN, state.brake_light_on);
 
     if (broadcast_build_info_timer.shouldFire(current_time_ms)) {
         MotorCAN.write(create_code_hash_message(GIT_COMMIT_HASH_U64));

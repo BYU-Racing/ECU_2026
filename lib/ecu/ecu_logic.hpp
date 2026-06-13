@@ -100,6 +100,11 @@ class Pedals {
     void noteImplausibility(uint32_t current_time_ms, LineInfo line_info, AssertCode code);
 };
 
+struct GpioState {
+  bool horn_on;
+  bool brake_light_on;
+};
+
 class Ecu {
 public:
     void processMessage(uint32_t current_time_ms, CAN_message_t msg);
@@ -107,7 +112,9 @@ public:
     /* The caller of this should continously call this until it returns
      * `std::nullopt`. For each message emitted, the caller should send
      * along the CAN bus. */
-    std::optional<CAN_message_t> poll(uint32_t current_time_ms);
+    std::optional<CAN_message_t> pollCan(uint32_t current_time_ms);
+    GpioState pollGpioState(uint32_t current_time_ms);
+
     void printState();
 
     void handleStartupSequence(uint32_t current_time_ms);
@@ -117,11 +124,19 @@ public:
     /* Whether the car is fully on (not starting up). */
     bool car_fully_on = false;
 
+    /* Used for startup. */
+    bool horn_on = false;
+    /* Turn the horn off so it doesn't stay on in perpetuity. */
+    Trigger horn_off_trigger;
+
     /* Whether the car is switched on or not. */
     bool start_switch_on = false;
 
     /* Brake and throttle cannot be pressed at the same time. See the 2026 rules, EV.4.7. */
     bool throttle_and_brake_pressed = false;
+
+    /* Set based on received brake pressure. */
+    bool brake_light_on = false;
 
     /* When the brake is pressed and the enable switch is flipped, we still
      * wait 2 seconds before enabling the motor. This is that startup countdown. */
