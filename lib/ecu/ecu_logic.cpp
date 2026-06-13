@@ -8,12 +8,10 @@
 #include "can_serde.hpp"
 #include "constants.hpp"
 
-/* Currently a stub. Implement the torque mapping here. */
-int16_t map_throttle_to_torque(uint16_t throttle_percent) {
+/* Currently a stub. Implement the torque mapping here. Returns in Nm, _not_ 0.1*Nm */
+static double map_throttle_to_torque(uint16_t throttle_percent) {
     int64_t result = map(throttle_percent, 0, 100, 0, MAX_TORQUE);
-    /* Make sure we can narrow the integer. */
-    SAFETY_ASSERT(result >= INT16_MIN && result <= INT16_MAX, AssertCode::IntegerOverflow);
-    return static_cast<int16_t>(result);
+    return static_cast<double>(result) / 10.0;
 }
 
 void Pedals::poll(uint32_t current_time_ms) {
@@ -47,14 +45,14 @@ void Pedals::poll(uint32_t current_time_ms) {
 #endif
 
     if (this->implausibility.has_value()) {
-        ImplausibilityDetails details = *this->implausibility;
-
         if (last_implausibility.has_value()) {
             /* Restore the original implausibility information, so we have
-             * both the time and information that the first implausibility
-             * happened at. */
-            this->implausibility = *last_implausibility;
+            * both the time and information that the first implausibility
+            * happened at. */
+           this->implausibility = *last_implausibility;
         }
+
+        ImplausibilityDetails details = *this->implausibility;
 
         /* Use this to panic if an implausibility has occured for too long. */
         if (current_time_ms - details.happened_at_ms > ALLOWED_IMPLAUSILIBTY_LENGTH_MS) {
@@ -65,6 +63,8 @@ void Pedals::poll(uint32_t current_time_ms) {
     }
 
     this->smoothThrottle(current_time_ms);
+
+    this->throttlePostProcessing(current_time_ms);
 }
 
 void Pedals::inputThrottleOnePosition(uint32_t current_time_ms, uint16_t value) {
@@ -98,7 +98,15 @@ bool Pedals::isBrakePressed() {
 }
 
 int16_t Pedals::getCurrentTorqueAmount() {
-    return map_throttle_to_torque(this->smoothed_throttle);
+    double cascadia_format = this->pid_output * 10.0;
+    /* The PID may undershoot, so we clamp it if it gets below 0. */
+    if (cascadia_format < 0.0) cascadia_format = 0.0;
+    if (cascadia_format > static_cast<double>(MAX_TORQUE)) {
+        cascadia_format = static_cast<double>(MAX_TORQUE);
+    }
+
+    SAFETY_ASSERT(cascadia_format <= INT16_MAX, AssertCode::IntegerOverflow);
+    return static_cast<int16_t>(cascadia_format);
 }
 
 void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
@@ -162,15 +170,7 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
 }
 
 void Pedals::smoothThrottle(uint32_t current_time_ms) {
-    /* Smooth out throttle values by averaging out previous values. */
-
     constexpr size_t torque_memory_len = sizeof(this->torque_memory) / sizeof(this->torque_memory[0]);
-
-    /* If we receive a value of 0, reset history and return 0. */
-    if (this->mapped_throttle == 0) {
-        memset(&this->torque_memory, 0, sizeof(this->torque_memory));
-        this->smoothed_throttle = 0;
-    }
 
     if (this->torque_memory_pacing.shouldFire(current_time_ms)) {
         /* Only cycle memory when it's been long enough. */
@@ -193,6 +193,15 @@ void Pedals::smoothThrottle(uint32_t current_time_ms) {
     SAFETY_ASSERT(averaged >= 0, AssertCode::IntegerOverflow);
 
     this->smoothed_throttle = averaged;
+}
+
+void Pedals::throttlePostProcessing(uint32_t current_time_ms) {
+    if (this->pid_pacing.shouldFire(current_time_ms)) {
+        double torque_target = map_throttle_to_torque(this->smoothed_throttle);
+
+        this->pid_output = this->throttle_pid.nextValue(current_time_ms, torque_target, this->last_output);
+        this->last_output = this->pid_output;
+    }
 }
 
 /* This records that an implausibility happened. We don't immediately panic when
@@ -229,6 +238,7 @@ void Ecu::printState() {
     PRINTF("Ecu:\n");
     PRINTF("  car_fully_on: %s\n", this->car_fully_on ? "yes" : "no");
     PRINTF("  start_switch_on: %s\n", this->start_switch_on ? "yes" : "no");
+    PRINTF("  precharge_complete: %s\n", this->precharge_complete ? "yes" : "no");
     this->pedals.printState();
 }
 
@@ -306,7 +316,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
             this->start_switch_on = parse_start_switch(msg);
             break;
         // To check VSM internal state
-        case MessageId::InternalStates:
+        case MessageId::InternalStates: {
             VsmState vsm_state = parse_motor_internal_states(msg).vsm_state;
             /* if the vsm state changes then update precharge_complete boolean */
             if (vsm_state == VsmState::PreChargeComplete || vsm_state == VsmState::VsmWait
@@ -316,6 +326,7 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
                 this->precharge_complete = false;
             }
             break;
+        }
         case MessageId::ThrottleOnePosition:
             this->pedals.inputThrottleOnePosition(current_time_ms, parse_throttle_one_position(msg));
             break;
@@ -338,19 +349,26 @@ std::optional<CAN_message_t> Ecu::poll(uint32_t current_time_ms) {
      * and if the brake is up. We don't enable the inverter until the
      * driver has lifted up the brake. */
 
+    if (this->throttle_and_brake_pressed) {
+        /* The driver previously pressed the throttle and brake at the same time, so this is
+        * the code that deals with potentially re-enabling once the throttle is low
+        * enough again. */
+       if (this->pedals.getThrottleValue() <= 5 && !this->pedals.isBrakePressed()) {
+           this->throttle_and_brake_pressed = false;
+        }
+    }
+    /* Brake and throttle cannot be pressed at the same time. See the 2026 rules, EV.4.7. */
+    if (this->pedals.getThrottleValue() >= 25 && this->pedals.isBrakePressed()) {
+        this->throttle_and_brake_pressed = true;
+    }
+
     bool inverter_enabled = false;
     int16_t torque_to_use = 0;
 
-    if (this->car_fully_on) {
+    if (this->car_fully_on && !this->throttle_and_brake_pressed) {
         inverter_enabled = true;
         torque_to_use = this->pedals.getCurrentTorqueAmount();
     }
-
-    /* Brake and throttle cannot be pressed at the same time. See the 2026 rules, EV.4.7. */
-    // FIXME this isn't working.
-#ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
-    SAFETY_ASSERT(!(this->pedals.getThrottleValue() > 25 && this->pedals.isBrakePressed()), AssertCode::BrakeAndThrottlePressed);
-#endif
 
     /* Pace how often we send a motor command by using a timer. Note, we still
      * send these messages, even when the inverter is off, so that the motor

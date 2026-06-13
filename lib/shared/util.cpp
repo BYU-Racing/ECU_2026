@@ -64,6 +64,42 @@ std::optional<uint32_t> Timer::timeUntilNextFiring(uint32_t current_time_ms) {
     }
 }
 
+/* Pid */
+Pid::Pid(uint32_t current_time_ms, double p_term, double i_term, double d_term, double windup_cap) {
+    this->last_time_ms = current_time_ms;
+    this->p_term = p_term;
+    this->i_term = i_term;
+    this->d_term = d_term;
+    this->windup_cap = windup_cap;
+}
+
+double Pid::nextValue(uint32_t current_time_ms, double target, double reading) {
+    /* Convert the difference (in milliseconds) to seconds. */
+    double delta_time = (double)(current_time_ms - this->last_time_ms) / 1000.0;
+    double error = target - reading;
+
+    double p = error;
+
+    this->integral += error * delta_time;
+    /* Prevent the integral from winding up too much. */
+    if (this->integral > this->windup_cap) this->integral = this->windup_cap;
+    if (this->integral < -this->windup_cap) this->integral = -this->windup_cap;
+    double i = this->integral;
+
+    double d;
+    if (delta_time == 0) {
+        /* Avoid dividing by 0. */
+        d = 0.0;
+    } else {
+        d = (error - this->last_error) / delta_time;
+    }
+    this->last_error = error;
+
+    this->last_time_ms = current_time_ms;
+
+    return p * this->p_term + i * this->i_term + d * this->d_term;
+}
+
 /* Used to condense the file name into something short enough we can send
  * along the CAN bus in the case of a fault. */
 uint32_t str_hash(const char *str) {

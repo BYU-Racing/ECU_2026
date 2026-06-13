@@ -67,18 +67,32 @@ class Pedals {
     uint16_t brake_pos = 0;
 
     /* Throttle smoothing memory. */
-    uint8_t torque_memory[4] = {0, 0, 0, 0};
+    uint8_t torque_memory[3] = {0, 0, 0};
     /* We only shift to the next value in torque_memory every SMOOTH_PERIOD_MS ms. */
     Timer torque_memory_pacing = Timer(0, SMOOTH_PERIOD_MS);
     /* The result from smoothing the throttle. */
     uint8_t smoothed_throttle = 0;
 
+    /* This is a PID, with the target as the current target torque, and the
+     * measurement as the last target. */
+    Pid throttle_pid = Pid(0, 0.0, 7.8, 0.0, 20.0);
+    Timer pid_pacing = Timer(0, PID_PERIOD_MS);
+    double last_output = 0.0;
+    double pid_output = 0.0;
+
     /* If we've received both a new throttle 1 value, and a new throttle 2 value, then
      * this will calculate the new mapped throttle value (as a percentage in range [0, 100]).*/
     void maybeRecomputeMappedThrottle(uint32_t current_time_ms);
 
-    /* Internal helper function used to smooth the throttle through time. */
+    /* Smooth out throttle values by averaging out previous values. This
+     * is only for cleaning up the signal, _not_ for giving the driver
+     * a good experience (see `Pedals::throttlePostProcessing` for
+     * giving the driver a good time). */
     void smoothThrottle(uint32_t current_time_ms);
+
+    /* This function is responsible for the "feel" of the throttle.
+     * This currently includes the torque mapping and PID. */
+    void throttlePostProcessing(uint32_t current_time_ms);
 
     /* We don't immediately panic when an implausibility occurs, as the rules
      * allow us to tolerate an implausibility for up to 100 ms. See the 2026
@@ -96,13 +110,7 @@ public:
     std::optional<CAN_message_t> poll(uint32_t current_time_ms);
     void printState();
 
-    /* smooth torque */
-    int16_t smoothThrottle(uint32_t current_time);
-
     void handleStartupSequence(uint32_t current_time_ms);
-
-    /* update precharge_complete from vsm_state */
-    void updateVSMState();
 
     private: Pedals pedals;
 
@@ -111,6 +119,9 @@ public:
 
     /* Whether the car is switched on or not. */
     bool start_switch_on = false;
+
+    /* Brake and throttle cannot be pressed at the same time. See the 2026 rules, EV.4.7. */
+    bool throttle_and_brake_pressed = false;
 
     /* FIXME this is a hack to work around the start switch sensor. */
     bool last_start_switch_value = false;

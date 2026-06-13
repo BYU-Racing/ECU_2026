@@ -10,11 +10,17 @@
 #include "can_serde.hpp"
 #include "ecu_logic.hpp"
 
+#include "generated/git_info.h"
+
 using namespace std;
 
+FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> DataCAN;
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> MotorCAN;
 
 Ecu ECU = {};
+
+Timer broadcast_build_info_timer(0, BROADCAST_INFO_INTERVAL_MS);
+Timer debug_pacing(0, 500);
 
 /* We only use soft resets in debug builds. In production builds they're treated as
  * safety failures. */
@@ -92,13 +98,13 @@ void setup() {
 
     MotorCAN.begin();
     MotorCAN.setBaudRate(CAN_BAUD_RATE);
+    DataCAN.begin();
+    DataCAN.setBaudRate(CAN_BAUD_RATE);
 
     Serial.println("============================================");
     Serial.println("==========Motor CAN initialized=============");
     Serial.println("============================================");
 }
-
-Timer debug_pacing(0, 500);
 
 void loop() {
 #ifdef ENABLE_DEBUGGING
@@ -128,26 +134,31 @@ void loop() {
 
         /* Make sure to reset the trigger when we're done. */
         SOFT_RESET_TRIGGER.triggerReached(millis());
-    }
-#else
-    if (false) {
+
+        /* Return early, so nothing else runs after this. */
+        return;
     }
 #endif
-    else {
-        /* Generate all outgoing messages and send each. */
-        while (true) {
-            std::optional<CAN_message_t> to_send = ECU.poll(current_time_ms);
-            if (to_send.has_value()) {
-                MotorCAN.write(*to_send);
-            } else {
-                break;
-            }
+
+    /* Generate all outgoing messages and send each. */
+    while (true) {
+        std::optional<CAN_message_t> to_send = ECU.poll(current_time_ms);
+        if (to_send.has_value()) {
+            MotorCAN.write(*to_send);
+        } else {
+            break;
         }
     }
 
-    if (debug_pacing.shouldFire(current_time_ms)) {
-#ifdef ENABLE_DEBUGGING
-        ECU.printState();
-#endif
+    if (broadcast_build_info_timer.shouldFire(current_time_ms)) {
+        MotorCAN.write(create_code_hash_message(GIT_COMMIT_HASH_U64));
+        MotorCAN.write(create_commit_author_message(GIT_COMMIT_AUTHOR));
+        MotorCAN.write(create_uploader_message(GIT_UPLOADER));
     }
+
+#ifdef ENABLE_DEBUGGING
+    if (debug_pacing.shouldFire(current_time_ms)) {
+        ECU.printState();
+    }
+#endif
 }

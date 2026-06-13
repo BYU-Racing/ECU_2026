@@ -27,6 +27,23 @@ private:
     uint32_t duration_ms = 0;
 };
 
+class Pid {
+  public:
+    /* A classic PID implementation, with an additional windup cap. The windup
+     * cap prevents both positive and negative windup. The cap itself should be positive. */
+    Pid(uint32_t current_time_ms, double p_term, double i_term, double d_term, double windup_cap);
+    double nextValue(uint32_t current_time_ms, double target, double reading);
+  private:
+    double p_term;
+    double i_term;
+    double d_term;
+    double windup_cap;
+
+    double last_error = 0.0;
+    double integral = 0.0;
+    uint32_t last_time_ms;
+};
+
 #ifdef BUILD_MODE_TEST
 #include <cstdio>
 #define PRINTF(...) printf(__VA_ARGS__)

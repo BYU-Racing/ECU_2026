@@ -9,6 +9,9 @@ constexpr uint32_t SOFT_RESET_LENGTH_MS = 2000;
 constexpr long SERIAL_BAUD_RATE = 115200;
 constexpr uint32_t CAN_BAUD_RATE = 250000;
 
+/* Interval between broadcasting the system build info. */
+constexpr uint32_t BROADCAST_INFO_INTERVAL_MS = 1000;
+
 /* Throttle constants */
 
 /* How long we tolerate between receiving pedal values until we panic. */
@@ -25,17 +28,18 @@ constexpr uint32_t ALLOWED_IMPLAUSILIBTY_LENGTH_MS = 60;
 constexpr int16_t THROTTLE1_LOW = 660;
 constexpr int16_t THROTTLE1_HIGH = 950;
 /* If the throttle 1 values is lower or higher than this range, we panic.
- * Used to comply with T.4.2.10. */
+ * Used to comply with T.4.2.10, 2026 rules. */
 constexpr int16_t THROTTLE1_MIN_OUT_OF_RANGE = 620;
 constexpr int16_t THROTTLE1_MAX_OUT_OF_RANGE = 970;
 
-/* THROTTLE2_LOW and THROTTLE2_HIGH can be reversed. */
-constexpr int16_t THROTTLE2_LOW = 420;
+/* THROTTLE2_LOW and THROTTLE2_HIGH can be reversed. If outside this range, the
+ * throttle will clamp to 0%-100%. */
+constexpr int16_t THROTTLE2_LOW = 430;
 constexpr int16_t THROTTLE2_HIGH = 650;
-/* If the throttle 2 values is lower or higher than this range, we panic.
- * Used to comply with T.4.2.10. */
-constexpr int16_t THROTTLE2_MIN_OUT_OF_RANGE = 150;
-constexpr int16_t THROTTLE2_MAX_OUT_OF_RANGE = 850;
+/* If the throttle 2 value is lower or higher than this range, we panic.
+ * Used to comply with T.4.2.10, 2026 rules. */
+constexpr int16_t THROTTLE2_MIN_OUT_OF_RANGE = 350;
+constexpr int16_t THROTTLE2_MAX_OUT_OF_RANGE = 725;
 
 /* Maximum allowed difference between the two throttles' values,
  * after those values have been mapped to [THROTTLE[X]_MIN, THROTTLE[X]_MAX]. */
@@ -43,7 +47,8 @@ constexpr uint16_t THROTTLE_DISAGREE = 10;
 
 constexpr int16_t MIN_THROTTLE = 0; /* In CASCADIA format, 1 = 0.1Nm */
 constexpr int16_t MAX_THROTTLE = 100; /* In CASCADIA format, 1 = 0.1Nm */
-constexpr uint32_t SMOOTH_PERIOD_MS = 50; /* How often the input is smoothed */
+constexpr uint32_t SMOOTH_PERIOD_MS = 30; /* How often the input is smoothed */
+constexpr uint32_t PID_PERIOD_MS = 10;    /* How often the PID is updated */
 
 
 /* BRAKES */
@@ -60,8 +65,7 @@ constexpr uint32_t STARTUP_DELAY_MS = 2000;  /* 2 seconds */
 
 constexpr int16_t TORQUE_FLOOR = 10;
 
-/* MAX TORQUE */
-/* N * 0.1 */
+/* MAX TORQUE in CASCADIA format, 1 = 0.1Nm */
 constexpr int16_t MAX_TORQUE = 1000;
  
 /* Drive Modes */
