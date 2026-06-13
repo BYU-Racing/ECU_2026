@@ -32,7 +32,6 @@ void Pedals::poll(uint32_t current_time_ms) {
     this->too_long_since_throttle_2.startIfStopped(current_time_ms, PEDAL_TIMEOUT_MS);
     this->too_long_since_brake.startIfStopped(current_time_ms, PEDAL_TIMEOUT_MS);
 
-#ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
     if (this->too_long_since_throttle_1.triggerReached(current_time_ms)) {
         SAFETY_ASSERT(false, AssertCode::PedalTimeout);
     }
@@ -42,7 +41,6 @@ void Pedals::poll(uint32_t current_time_ms) {
     if (this->too_long_since_brake.triggerReached(current_time_ms)) {
         SAFETY_ASSERT(false, AssertCode::PedalTimeout);
     }
-#endif
 
     if (this->implausibility.has_value()) {
         if (last_implausibility.has_value()) {
@@ -115,8 +113,6 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
         uint16_t throttle2 = *this->throttle_2_pos;
 
         /* Make sure the throttle values are in range. */
-        // FIXME these are throwing errors right now.
-#ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
         if (this->throttle_1_pos < THROTTLE1_MIN_OUT_OF_RANGE) {
             /* This is a garbage value, so we really shouldn't use it.
             * Hence, we'll return early so the rest of the code in
@@ -136,7 +132,6 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
             this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleOutOfRange);
             return;
         }
-#endif
 
         int64_t throttle_1_percent = map(throttle1, THROTTLE1_LOW, THROTTLE1_HIGH, 0, 100);
         int64_t throttle_2_percent = map(throttle2, THROTTLE2_LOW, THROTTLE2_HIGH, 0, 100);
@@ -149,22 +144,13 @@ void Pedals::maybeRecomputeMappedThrottle(uint32_t current_time_ms) {
         if (throttle_2_percent < 0) throttle_2_percent = 0;
         if (throttle_2_percent > 100) throttle_2_percent = 100;
 
-        // FIXME this is throwing an error.
         /* Make sure the two throttle values haven't diverged too far. */
-#ifndef FIXME_HACKS_TO_GET_THINGS_WORKING
         if (abs(throttle_1_percent - throttle_2_percent) >= THROTTLE_DISAGREE) {
             this->noteImplausibility(current_time_ms, CAPTURE_LINE_INFO(), AssertCode::ThrottleSensorsDiverged);
             return;
         }
-#endif
 
-        // FIXME actually average the values.
-#ifdef FIXME_HACKS_TO_GET_THINGS_WORKING
-        int64_t average = throttle_2_percent;
-#else
         int64_t average = (throttle_1_percent + throttle_2_percent) / 2;
-#endif
-
         this->mapped_throttle = average;
     }
 }
@@ -243,36 +229,6 @@ void Ecu::printState() {
 }
 
 void Ecu::handleStartupSequence(uint32_t current_time_ms) {
-    bool debounced_switch;
-
-    /* FIXME hack working around the non-debounced switch. */
-    if (this->last_start_switch_value == this->start_switch_on) {
-        /* Nothing to do, as the last value is the same as the current value. */
-        debounced_switch = this->start_switch_on;
-        this->turn_off_timeout.cancel();
-    } else if (this->start_switch_on) {
-        debounced_switch = true;
-        this->last_start_switch_value = true;
-        this->turn_off_timeout.cancel();
-    } else {
-        /* The switch was turned off, but we need to wait a second before
-         * considering it switched off. */
-
-        if (!this->turn_off_timeout.started()) {
-            /* If we haven't started the timer yet, go ahead and start it. */
-            this->turn_off_timeout.start(current_time_ms, 1000);
-            /* Keep the last value while we wait. */
-            debounced_switch = true;
-        } else if (this->turn_off_timeout.triggerReached(current_time_ms)) {
-            /* It's been long enough to consider it off. */
-            debounced_switch = false;
-            this->last_start_switch_value = false;
-        } else {
-            /* Timer is running but hasn't reached yet - keep the old value. */
-            debounced_switch = true;
-        }
-    }
-
     /* Car startup sequence. */
     if (this->car_fully_on) {
         /* No need to do the motor startup sequence if the car is already fully started. */
@@ -285,12 +241,7 @@ void Ecu::handleStartupSequence(uint32_t current_time_ms) {
          * We will also wait two seconds before fully starting up, or abort if
          * one of the preconditions stops holding. */
 
-        /* FIXME right now we ignore the brake value. */
-#ifdef FIXME_HACKS_TO_GET_THINGS_WORKING
-        if (debounced_switch && this->precharge_complete) {
-#else
-        if (this->pedals.isBrakePressed() && debounced_switch && this->precharge_complete) {
-#endif
+        if (this->pedals.isBrakePressed() && this->start_switch_on && this->precharge_complete) {
             if (!this->startup_countdown.started()) {
                 this->startup_countdown.start(current_time_ms, STARTUP_DELAY_MS);
             } else if (this->startup_countdown.triggerReached(current_time_ms)) {
@@ -303,7 +254,7 @@ void Ecu::handleStartupSequence(uint32_t current_time_ms) {
         }
     }
 
-    if (!debounced_switch) {
+    if (!this->start_switch_on) {
         /* Pretty self-explanatory: if the start switch turns off, the car turns off. */
         this->car_fully_on = false;
     }
