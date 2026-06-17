@@ -88,35 +88,10 @@ void loop() {
         }
     }
 
-    // auto state = ECU.pollGpioState(current_time_ms);
-    // update gpio states
-    // if (state.horn_on) {
-    //     digitalWrite(HORN_PIN, HIGH);
-    // } else {
-    //     digitalWrite(HORN_PIN, LOW);
-    // }
-
-    // if (state.brake_light_on) {
-    //     digitalWrite(BRAKE_LIGHT_PIN, HIGH);
-    // } else {
-    //     digitalWrite(BRAKE_LIGHT_PIN, LOW);
-    // }
-
-    // digitalWrite(HORN_PIN, state.horn_on);
-    // digitalWrite(BRAKE_LIGHT_PIN, state.brake_light_on);
-
     if (broadcast_build_info_timer.shouldFire(current_time_ms)) {
         MotorCAN.write(create_code_hash_message(GIT_COMMIT_HASH_U64));
         MotorCAN.write(create_commit_author_message(GIT_COMMIT_AUTHOR));
         MotorCAN.write(create_uploader_message(GIT_UPLOADER));
-
-        // also print GPIO pin states
-        Serial.println();
-        Serial.println("GPIO states");
-        Serial.println("HORN: ");
-        Serial.print(state.horn_on);
-        Serial.println("BRAKE: ");
-        Serial.print(state.brake_light_on);
     }
 
 #ifdef ENABLE_DEBUGGING
