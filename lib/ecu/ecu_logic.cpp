@@ -85,6 +85,11 @@ void Pedals::inputBrakePosition(uint32_t current_time_ms, uint16_t position) {
 
     this->brake_pos = position;
     this->too_long_since_brake.cancel();
+
+    // check if brake position hasn't faulted
+    if (position < BRAKE_PRESSURE_MIN) {
+        SAFETY_ASSERT(false, AssertCode::BrakeSensor);
+    }
 }
 
 uint8_t Pedals::getThrottleValue() {
