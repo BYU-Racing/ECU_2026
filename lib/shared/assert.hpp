@@ -29,7 +29,7 @@
 
 
 /* Error codes for safety asserts */
-enum class AssertCode: uint8_t {
+enum class AssertCode : uint8_t {
     /* Note we have no value set to 0; this is intentional.
      * Our current screen uses 0 as the default error code value,
      * so it needs to have 0 as nothing wrong. */
@@ -43,11 +43,13 @@ enum class AssertCode: uint8_t {
     /* If it's been too long since we've received a pedal value, we panic.
      * T.4.2.11(b) 2026 rules */
     PedalTimeout = 23,
+    /* if the brake pressure sensor sends bad data then the ECU should fault and 
+     * not send motor commands to the motor */
+    BrakeInvalidData = 24,
     /* This should never be necessary, but if the BMS faults and the hardware 
      * does not pull the shutdown circuit, then the ECU should fault and the car
      * should not be sending commnands to the motor. */
     BMSFault = 24,
-    BrakeInvalidData = 25,
 };
 
 /* Captures the filename and file. I wish I could do this without a macro,
