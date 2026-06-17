@@ -109,6 +109,14 @@ void loop() {
         MotorCAN.write(create_code_hash_message(GIT_COMMIT_HASH_U64));
         MotorCAN.write(create_commit_author_message(GIT_COMMIT_AUTHOR));
         MotorCAN.write(create_uploader_message(GIT_UPLOADER));
+
+        // also print GPIO pin states
+        Serial.println();
+        Serial.println("GPIO states");
+        Serial.println("HORN: ");
+        Serial.print(state.horn_on);
+        Serial.println("BRAKE: ");
+        Serial.print(state.brake_light_on);
     }
 
 #ifdef ENABLE_DEBUGGING
