@@ -42,10 +42,7 @@ void assert_failed_handler(AssertLevel level, LineInfo info, AssertCode error_co
 
         MotorCAN.write(create_critical_fault_command(fault_msg));
 
-        pinMode(13, OUTPUT);
-        digitalWrite(13, HIGH);
-        delay(500);
-        digitalWrite(13, LOW);
+        // wait so we don't flood the system with CAN msg
         delay(500);
     }
 }
