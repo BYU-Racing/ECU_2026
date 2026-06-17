@@ -58,6 +58,7 @@ constexpr uint32_t PID_PERIOD_MS = 10;    /* How often the PID is updated */
 /* The reported brake level should never be lower than this, or it is considered
  * an unrecoverable fault. */
 constexpr uint16_t BRAKE_PRESSURE_MIN = 10;
+constexpr uint16_t BRAKE_PRESSURE_MAX = 100;
 
 /* The amount that the brake needs to be pressed down before it's considered
  * pressed by the system. */
