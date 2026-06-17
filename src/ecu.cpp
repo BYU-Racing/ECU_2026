@@ -88,19 +88,19 @@ void loop() {
         }
     }
 
-    auto state = ECU.pollGpioState(current_time_ms);
+    // auto state = ECU.pollGpioState(current_time_ms);
     // update gpio states
-    if (state.horn_on) {
-        digitalWrite(HORN_PIN, HIGH);
-    } else {
-        digitalWrite(HORN_PIN, LOW);
-    }
+    // if (state.horn_on) {
+    //     digitalWrite(HORN_PIN, HIGH);
+    // } else {
+    //     digitalWrite(HORN_PIN, LOW);
+    // }
 
-    if (state.brake_light_on) {
-        digitalWrite(BRAKE_LIGHT_PIN, HIGH);
-    } else {
-        digitalWrite(BRAKE_LIGHT_PIN, LOW);
-    }
+    // if (state.brake_light_on) {
+    //     digitalWrite(BRAKE_LIGHT_PIN, HIGH);
+    // } else {
+    //     digitalWrite(BRAKE_LIGHT_PIN, LOW);
+    // }
 
     // digitalWrite(HORN_PIN, state.horn_on);
     // digitalWrite(BRAKE_LIGHT_PIN, state.brake_light_on);

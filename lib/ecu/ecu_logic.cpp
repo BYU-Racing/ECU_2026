@@ -264,13 +264,13 @@ void Ecu::handleStartupSequence(uint32_t current_time_ms) {
     if (!car_fully_on_before && this->car_fully_on) {
         /* We just went from the car from being off to being on. This means that 
          * we now need to sound the horn for 2 seconds. */
-        this->horn_on = true;
+        digitalWrite(HORN_PIN, HIGH);
         this->horn_off_trigger.start(current_time_ms, 2000);
     }
 
     /* Turn the horn off afterwards. */
     if (this->horn_off_trigger.triggerReached(current_time_ms)) {
-        this->horn_on = false;
+        digitalWrite(HORN_PIN, LOW);
     }
 }
 
@@ -306,7 +306,12 @@ void Ecu::processMessage(uint32_t current_time_ms, CAN_message_t msg) {
             break;
         case MessageId::BrakePressure:
             this->pedals.inputBrakePosition(current_time_ms, parse_brake_pressure(msg));
-            this->brake_light_on = this->pedals.isBrakePressed();
+            // this->brake_light_on = this->pedals.isBrakePressed();
+            if (this->pedals.isBrakePressed()) {
+                digitalWrite(BRAKE_LIGHT_PIN, HIGH);
+            } else {
+                digitalWrite(BRAKE_LIGHT_PIN, LOW);
+            }
             break;
         default:
             break;
