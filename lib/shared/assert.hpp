@@ -49,7 +49,7 @@ enum class AssertCode : uint8_t {
     /* This should never be necessary, but if the BMS faults and the hardware 
      * does not pull the shutdown circuit, then the ECU should fault and the car
      * should not be sending commnands to the motor. */
-    BMSFault = 24,
+    BMSFault = 30,
 };
 
 /* Captures the filename and file. I wish I could do this without a macro,
