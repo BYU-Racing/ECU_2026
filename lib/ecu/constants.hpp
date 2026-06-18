@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-constexpr int HORN_PIN = 19;
-constexpr int BRAKE_LIGHT_PIN = 13;
+constexpr int HORN_PIN = 15;
+constexpr int BRAKE_LIGHT_PIN = 14;
 
 /* ASSERTS */
 constexpr uint32_t SOFT_RESET_LENGTH_MS = 2000;
