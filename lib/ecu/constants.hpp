@@ -53,16 +53,17 @@ constexpr int16_t MAX_THROTTLE = 100; /* In CASCADIA format, 1 = 0.1Nm */
 constexpr uint32_t SMOOTH_PERIOD_MS = 30; /* How often the input is smoothed */
 constexpr uint32_t PID_PERIOD_MS = 10;    /* How often the PID is updated */
 
-
 /* BRAKES */
 /* The reported brake level should never be lower than this, or it is considered
  * an unrecoverable fault. */
-constexpr uint16_t BRAKE_PRESSURE_MIN = 10;
-constexpr uint16_t BRAKE_PRESSURE_MAX = 100;
+/* (1.5V / 3.3 V) * (2^10-1) = 465; thus an allowable range of brake sensor values with error tolerance 
+ * is 140 to 500 and 20% travel would be 214 */
+constexpr uint16_t BRAKE_PRESSURE_MIN = 140;
+constexpr uint16_t BRAKE_PRESSURE_MAX = 500;
 
 /* The amount that the brake needs to be pressed down before it's considered
  * pressed by the system. */
-constexpr int16_t BRAKE_CONSIDERED_PRESSED = 20;
+constexpr int16_t BRAKE_CONSIDERED_PRESSED = 214;
 
 
 constexpr uint32_t STARTUP_DELAY_MS = 2000;  /* 2 seconds */
